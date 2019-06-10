@@ -33,6 +33,7 @@ def read_image_bgr(path):
     return image[:, :, ::-1].copy()
 
 
+
 def preprocess_image(x, mode='caffe'):
     """ Preprocess an image by subtracting the ImageNet mean.
 

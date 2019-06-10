@@ -46,7 +46,7 @@ from ..utils.anchors import make_shapes_callback
 from ..utils.keras_version import check_keras_version
 from ..utils.model import freeze as freeze_model
 from ..utils.transform import random_transform_generator
-
+from ..preprocessing.centers_generator import Centers_Generator
 
 def makedirs(path):
     # Intended behavior: try to create the directory,
@@ -80,7 +80,7 @@ def model_with_weights(model, weights, skip_mismatch):
     return model
 
 
-def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_backbone=False):
+def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_backbone=False, submobodels = None):
     """ Creates three models (model, training_model, prediction_model).
 
     Args
@@ -102,23 +102,35 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_
     if multi_gpu > 1:
         from keras.utils import multi_gpu_model
         with tf.device('/cpu:0'):
-            model = model_with_weights(backbone_retinanet(num_classes, modifier=modifier), weights=weights, skip_mismatch=True)
+            model = model_with_weights(backbone_retinanet(num_classes, modifier=modifier, submodels = submobodels), weights=weights, skip_mismatch=True)
         training_model = multi_gpu_model(model, gpus=multi_gpu)
     else:
-        model          = model_with_weights(backbone_retinanet(num_classes, modifier=modifier), weights=weights, skip_mismatch=True)
+        model          = model_with_weights(backbone_retinanet(num_classes, modifier=modifier, submodels = submobodels), weights=weights, skip_mismatch=True)
         training_model = model
 
     # make prediction model
     prediction_model = retinanet_bbox(model=model)
 
     # compile model
-    training_model.compile(
-        loss={
-            'regression'    : losses.smooth_l1(),
-            'classification': losses.focal()
-        },
-        optimizer=keras.optimizers.adam(lr=1e-5, clipnorm=0.001)
-    )
+
+    if submobodels is None:
+        training_model.compile(
+            loss={
+                'regression'    : losses.smooth_l1(),
+                'classification': losses.focal()
+            },
+            optimizer=keras.optimizers.adam(lr=1e-5, clipnorm=0.001)
+        )
+
+    if submobodels == 'centers':
+        training_model.compile(
+            loss={
+                'regression'    : losses.smooth_l1(),
+                'classification': losses.focal(),
+                'centers': losses.smooth_l1(val_num=1)
+            },
+            optimizer=keras.optimizers.adam(lr=1e-5, clipnorm=0.001)
+        )
 
     return model, training_model, prediction_model
 
@@ -184,8 +196,8 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
 
     callbacks.append(keras.callbacks.ReduceLROnPlateau(
         monitor  = 'loss',
-        factor   = 0.1,
-        patience = 2,
+        factor   = 0.2,
+        patience = 3,
         verbose  = 1,
         mode     = 'auto',
         epsilon  = 0.0001,
@@ -226,6 +238,78 @@ def create_generators(args, preprocess_image):
         )
     else:
         transform_generator = random_transform_generator(flip_x_chance=0.5)
+
+    if args.centers:
+        args.dataset_type = 'BC+BCS'
+
+        # BCS_path = 'D:/Skola/PhD/data/BCS_boxed/'
+        # Box_images = 'C:/datasets/BoxCars116k/images_warped'
+        # Box_dataset = 'C:/datasets/BoxCars116k/dataset_warped.pkl'
+
+        # train_generator = Centers_Generator(
+        #     BCS_path,
+        #     Box_dataset,
+        #     Box_images,
+        #     BCS_sessions=[0],
+        #     **common_args
+        # )
+        #
+        # validation_generator = Centers_Generator(
+        #     BCS_path,
+        #     None,
+        #     None,
+        #     BCS_sessions=[0],
+        #     **common_args
+        # )
+
+        BCS_path = '/home/kocur/data/BCS_boxed/'
+        Box_images = '/home/kocur/data/BoxCars116k/images_warped/'
+        Box_dataset = '/home/kocur/data/BoxCars116k/dataset_warped.pkl'
+
+        train_generator = Centers_Generator(
+            BCS_path,
+            Box_dataset,
+            Box_images,
+            BCS_sessions=[0,1,2],
+            fake_centers = args.fake,
+            **common_args
+        )
+
+        validation_generator = Centers_Generator(
+            BCS_path,
+            None,
+            None,
+            BCS_sessions=[3],
+            fake_centers = args.fake,
+            **common_args
+        )
+        return train_generator, validation_generator
+
+    if args.ablation:
+        args.dataset_type = 'ablation'
+
+        BCS_path = '/home/kocur/data/BCS_boxed/'
+        Box_images = '/home/kocur/data/BoxCars116k/images_ablation/'
+        Box_dataset = '/home/kocur/data/BoxCars116k/dataset_ablation.pkl'
+
+        train_generator = Centers_Generator(
+            BCS_path,
+            Box_dataset,
+            Box_images,
+            BCS_sessions=[0,1,2],
+            no_centers = True,
+            **common_args
+        )
+
+        validation_generator = Centers_Generator(
+            BCS_path,
+            None,
+            None,
+            no_centers = True,
+            BCS_sessions=[3],
+            **common_args
+        )
+        return train_generator, validation_generator
 
     if args.dataset_type == 'coco':
         # import here to prevent unnecessary dependency on cocoapi
@@ -348,7 +432,7 @@ def parse_args(args):
     """
     parser     = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
     subparsers = parser.add_subparsers(help='Arguments for specific dataset types.', dest='dataset_type')
-    subparsers.required = True
+    subparsers.required = False
 
     coco_parser = subparsers.add_parser('coco')
     coco_parser.add_argument('coco_path', help='Path to dataset directory (ie. /tmp/COCO).')
@@ -393,8 +477,11 @@ def parse_args(args):
     parser.add_argument('--no-evaluation',   help='Disable per epoch evaluation.', dest='evaluation', action='store_false')
     parser.add_argument('--freeze-backbone', help='Freeze training of backbone layers.', action='store_true')
     parser.add_argument('--random-transform', help='Randomly transform image and annotations.', action='store_true')
-    parser.add_argument('--image-min-side', help='Rescale the image so the smallest side is min_side.', type=int, default=800)
-    parser.add_argument('--image-max-side', help='Rescale the image if the largest side is larger than max_side.', type=int, default=1333)
+    parser.add_argument('--image-min-side',  help='Rescale the image so the smallest side is min_side.', type=int, default=800)
+    parser.add_argument('--image-max-side',  help='Rescale the image if the largest side is larger than max_side.', type=int, default=1333)
+    parser.add_argument('--centers',         help='Use centers submodels.', action='store_true')
+    parser.add_argument('--fake',            help='Set centers to 0 on training.', action='store_true')
+    parser.add_argument('--ablation',        help='Ablation training.', action='store_true')
 
     return check_args(parser.parse_args(args))
 
@@ -426,6 +513,10 @@ def main(args=None):
         training_model   = model
         prediction_model = retinanet_bbox(model=model)
     else:
+        if args.centers:
+            submodels = 'centers'
+        else:
+            submodels = None
         weights = args.weights
         # default to imagenet if nothing else is specified
         if weights is None and args.imagenet_weights:
@@ -437,7 +528,8 @@ def main(args=None):
             num_classes=train_generator.num_classes(),
             weights=weights,
             multi_gpu=args.multi_gpu,
-            freeze_backbone=args.freeze_backbone
+            freeze_backbone=args.freeze_backbone,
+            submobodels=submodels
         )
 
     # print model summary
@@ -462,6 +554,8 @@ def main(args=None):
     training_model.fit_generator(
         generator=train_generator,
         steps_per_epoch=args.steps,
+        validation_data=validation_generator,
+        validation_steps=validation_generator.size()//args.batch_size,
         epochs=args.epochs,
         verbose=1,
         callbacks=callbacks,

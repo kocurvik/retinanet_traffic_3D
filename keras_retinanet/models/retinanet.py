@@ -74,7 +74,7 @@ def default_classification_model(
     return keras.models.Model(inputs=inputs, outputs=outputs, name=name)
 
 
-def default_regression_model(num_anchors, pyramid_feature_size=256, regression_feature_size=256, name='regression_submodel'):
+def default_regression_model(num_anchors, pyramid_feature_size=256, regression_feature_size=256, name='regression_submodel', val_num = 4):
     """ Creates the default regression submodel.
 
     Args
@@ -107,8 +107,8 @@ def default_regression_model(num_anchors, pyramid_feature_size=256, regression_f
             **options
         )(outputs)
 
-    outputs = keras.layers.Conv2D(num_anchors * 4, name='pyramid_regression', **options)(outputs)
-    outputs = keras.layers.Reshape((-1, 4), name='pyramid_regression_reshape')(outputs)
+    outputs = keras.layers.Conv2D(num_anchors * val_num, name='pyramid_regression', **options)(outputs)
+    outputs = keras.layers.Reshape((-1, val_num), name='pyramid_regression_reshape')(outputs)
 
     return keras.models.Model(inputs=inputs, outputs=outputs, name=name)
 
@@ -254,6 +254,25 @@ def __build_anchors(anchor_parameters, features):
     return keras.layers.Concatenate(axis=1, name='anchors')(anchors)
 
 
+def centers_submodels(num_classes, num_anchors):
+    """ Create a list of default submodels used for object detection.
+
+    The default submodels contains a regression submodel and a classification submodel.
+
+    Args
+        num_classes : Number of classes to use.
+        num_anchors : Number of base anchors.
+
+    Returns
+        A list of tuple, where the first element is the name of the submodel and the second element is the submodel itself.
+    """
+    return [
+        ('regression', default_regression_model(num_anchors)),
+        ('classification', default_classification_model(num_classes, num_anchors)),
+        ('centers', default_regression_model(num_anchors, val_num= 1, name='centers_submodel'))
+    ]
+
+
 def retinanet(
     inputs,
     backbone_layers,
@@ -287,6 +306,9 @@ def retinanet(
     """
     if submodels is None:
         submodels = default_submodels(num_classes, num_anchors)
+
+    if submodels is 'centers':
+        submodels = centers_submodels(num_classes, num_anchors)
 
     C3, C4, C5 = backbone_layers
 

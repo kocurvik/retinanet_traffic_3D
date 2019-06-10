@@ -106,6 +106,7 @@ def filter_detections(
     boxes.set_shape([max_detections, 4])
     scores.set_shape([max_detections])
     labels.set_shape([max_detections])
+    # other_[0].set_shape([max_detections,1])
     for o, s in zip(other_, [list(keras.backend.int_shape(o)) for o in other]):
         o.set_shape([max_detections] + s[1:])
 
@@ -154,6 +155,8 @@ class FilterDetections(keras.layers.Layer):
         classification = inputs[1]
         other          = inputs[2:]
 
+        print(other)
+
         # wrap nms with our parameters
         def _filter_detections(args):
             boxes          = args[0]
@@ -175,6 +178,7 @@ class FilterDetections(keras.layers.Layer):
         outputs = backend.map_fn(
             _filter_detections,
             elems=[boxes, classification, other],
+            swap_memory = True,
             dtype=[keras.backend.floatx(), keras.backend.floatx(), 'int32'] + [o.dtype for o in other],
             parallel_iterations=self.parallel_iterations
         )

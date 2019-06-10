@@ -67,7 +67,7 @@ def focal(alpha=0.25, gamma=2.0):
     return _focal
 
 
-def smooth_l1(sigma=3.0):
+def smooth_l1(sigma=3.0, val_num = 4):
     """ Create a smooth L1 loss functor.
 
     Args
@@ -90,8 +90,8 @@ def smooth_l1(sigma=3.0):
         """
         # separate target and state
         regression        = y_pred
-        regression_target = y_true[:, :, :4]
-        anchor_state      = y_true[:, :, 4]
+        regression_target = y_true[:, :, : val_num]
+        anchor_state      = y_true[:, :, val_num]
 
         # filter out "ignore" anchors
         indices           = backend.where(keras.backend.equal(anchor_state, 1))
