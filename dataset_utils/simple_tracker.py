@@ -7,7 +7,7 @@ import json
 import cv2
 
 import numpy as np
-from dataset_utils.warper import intersection, line
+from dataset_utils.geometry import line, intersection
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 import keras_retinanet.bin  # noqa: F401

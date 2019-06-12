@@ -17,10 +17,8 @@ if __name__ == "__main__" and __package__ is None:
 
 
 from dataset_utils.simple_tracker import SimpleTracker
-from dataset_utils.warper import decode_3dbb, get_transform_matrix, computeCameraCalibration
 from dataset_utils.writer import Writer
 from keras_retinanet.utils.image import preprocess_image
-from keras import backend as K
 
 import keras_retinanet.models
 

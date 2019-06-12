@@ -3,7 +3,8 @@ import json
 import cv2
 import numpy as np
 
-from dataset_utils.warper import line, intersection, computeCameraCalibration, get_transform_matrix
+from dataset_utils.warper import get_transform_matrix
+from dataset_utils.geometry import line, intersection, computeCameraCalibration
 
 
 def add_cross(image, center, color):
@@ -97,9 +98,9 @@ def generate_image():
     frame = np.zeros([1080, 1920])
     pts = [[100, 200], [1440, 200], [1440, 1080], [100, 1080]]
     # pts = None
-    M, IM = get_transform_matrix(vp1, vp2, frame, 640, 360, inverse=True, pts=pts)
+    M, IM = get_transform_matrix(vp1, vp2, frame, 640, 360, pts=pts)
 
-    M2, IM2 = get_transform_matrix(vp1, vp2, frame, 640, 360, inverse=True)
+    M2, IM2 = get_transform_matrix(vp1, vp2, frame, 640, 360)
 
     image = cv2.imread('D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset/session5_left/screen.png')
 
@@ -127,9 +128,9 @@ def generate_image():
     frame = np.zeros([1080, 1920])
     pts = [[100, 200], [1440, 200], [1440, 1080], [100, 1080]]
     # pts = None
-    M, IM = get_transform_matrix(vp1, vp2, frame, 640, 360, inverse=True, pts=pts)
+    M, IM = get_transform_matrix(vp1, vp2, frame, 640, 360, pts=pts)
 
-    M2, IM2 = get_transform_matrix(vp1, vp2, frame, 640, 360, inverse=True)
+    M2, IM2 = get_transform_matrix(vp1, vp2, frame, 640, 360)
 
     image = cv2.imread('D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset/session5_left/screen.png')
 

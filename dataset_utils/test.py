@@ -17,8 +17,8 @@ if __name__ == "__main__" and __package__ is None:
 
 
 from dataset_utils.tracker import Tracker
-from dataset_utils.warper import decode_3dbb, get_transform_matrix, computeCameraCalibration, distance, \
-    get_transform_matrix_with_criterion
+from dataset_utils.warper import decode_3dbb, get_transform_matrix, get_transform_matrix_with_criterion
+from dataset_utils.geometry import distance, computeCameraCalibration
 from dataset_utils.writer import Writer
 from keras_retinanet.utils.image import preprocess_image
 from keras import backend as K
@@ -46,7 +46,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, out_path=N
     pts = None
     # M, IM = get_transform_matrix(vp3, vp2, frame, im_w, im_h, inverse=True, pts=pts)
 
-    M, IM = get_transform_matrix_with_criterion(vp3, vp2, mask, im_w, im_h, inverse=True)
+    M, IM = get_transform_matrix_with_criterion(vp3, vp2, mask, im_w, im_h)
 
 
     mg = np.array(np.meshgrid(range(im_w), range(im_h)))
@@ -208,7 +208,7 @@ def track_detections(json_path, im_w, im_h, name, threshold, fake = False):
     frame = np.zeros([1080, 1920])
     pts = [[100, 200], [1440, 200], [1440, 1080], [100, 1080]]
     # pts = None
-    M, IM = get_transform_matrix(vp3, vp2, frame, im_w, im_h, inverse=True, pts=pts)
+    M, IM = get_transform_matrix(vp3, vp2, frame, im_w, im_h, pts=pts)
 
     vp1_t = np.array([vp1], dtype="float32")
     vp1_t = np.array([vp1_t])
@@ -238,7 +238,7 @@ def test_dataset(images_path, ds_path, json_path, im_w, im_h):
     frame = np.zeros((1080, 1920, 3))
     print(frame.shape)
 
-    M, IM = get_transform_matrix(vp3, vp2, frame, im_w, im_h, inverse=True)
+    M, IM = get_transform_matrix(vp3, vp2, frame, im_w, im_h)
 
     vp1_t = np.array([vp1], dtype="float32")
     vp1_t = np.array([vp1_t])

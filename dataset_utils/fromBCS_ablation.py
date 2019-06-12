@@ -20,7 +20,8 @@ import os
 
 # from dataset_utils.warper import get_transform_matrix, intersection, line
 if os.name == 'nt':
-    from dataset_utils.warper import get_transform_matrix, intersection, line, computeCameraCalibration
+    from dataset_utils.warper import get_transform_matrix
+    from dataset_utils.geometry import line, intersection, computeCameraCalibration
 
     COCO_MODEL_PATH = os.path.join('D:/Skola/PhD/code/Mask_RCNN', "mask_rcnn_coco.h5")
 else:

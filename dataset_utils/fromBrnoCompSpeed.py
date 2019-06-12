@@ -21,8 +21,8 @@ import os
 
 # from dataset_utils.warper import get_transform_matrix, intersection, line
 if os.name == 'nt':
-    from dataset_utils.warper import get_transform_matrix, intersection, line, computeCameraCalibration, \
-    get_transform_matrix_with_criterion
+    from dataset_utils.warper import get_transform_matrix, get_transform_matrix_with_criterion
+    from dataset_utils.geometry import line, intersection, computeCameraCalibration
 
     COCO_MODEL_PATH = os.path.join('D:/Skola/PhD/code/Mask_RCNN', "mask_rcnn_coco.h5")
 else:
@@ -229,13 +229,13 @@ class BCS_boxer(object):
 
 
         if pair == '12':
-            M, IM = get_transform_matrix_with_criterion(vp1, vp2, mask, self.im_w, self.im_h, inverse=True)
+            M, IM = get_transform_matrix_with_criterion(vp1, vp2, mask, self.im_w, self.im_h)
             vp0_t = np.array([vp3], dtype="float32")
         elif pair == '13':
-            M, IM = get_transform_matrix_with_criterion(vp1, vp3, mask, self.im_w, self.im_h, inverse=True)
+            M, IM = get_transform_matrix_with_criterion(vp1, vp3, mask, self.im_w, self.im_h)
             vp0_t = np.array([vp2], dtype="float32")
         else:
-            M, IM = get_transform_matrix_with_criterion(vp3, vp2, mask, self.im_w, self.im_h, inverse=True)
+            M, IM = get_transform_matrix_with_criterion(vp3, vp2, mask, self.im_w, self.im_h)
             vp0_t = np.array([vp1], dtype="float32")
 
         vp0_t = np.array([vp0_t])
@@ -251,7 +251,7 @@ class BCS_boxer(object):
 
             boxes = []
             # Capture frame-by-frame
-            # frame = cv2.bitwise_and(frame, frame, mask=mask)
+            frame = cv2.bitwise_and(frame, frame, mask=mask)
             t_image = cv2.warpPerspective(frame, M, (self.im_w, self.im_h), borderMode=cv2.BORDER_CONSTANT)
 
             cv2.imshow('Original', frame)
@@ -321,9 +321,9 @@ if __name__ == '__main__':
         dir_list.append('session{}_left'.format(i))
         dir_list.append('session{}_right'.format(i))
         vid_list = [os.path.join(vid_path, d, 'video.avi') for d in dir_list]
-        # calib_list = [os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list]
+        calib_list = [os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list]
 
-        calib_list = [os.path.join(results_path, d, 'system_SochorCVIU_ManualCalib_ManualScale.json') for d in dir_list]
+        # calib_list = [os.path.join(results_path, d, 'system_SochorCVIU_ManualCalib_ManualScale.json') for d in dir_list]
         vid_lists.append(vid_list)
         calib_lists.append(calib_list)
 
@@ -332,6 +332,6 @@ if __name__ == '__main__':
 
     # vid_list = [os.path.join(vid_path, d, 'video.avi') for d in dir_list]
 
-    for i in range(4):
+    for i in range(3):
         boxer = BCS_boxer(model, vid_lists[i], calib_lists[i], pkl_paths[i], image_paths[i], 960, 540, save_often=True, n = 25)
         boxer.process()
