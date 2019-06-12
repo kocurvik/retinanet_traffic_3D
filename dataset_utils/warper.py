@@ -23,11 +23,7 @@ def warp_generator(image, bb3d, vp1, vp2, im_h, im_w):
     xs = [point[0][0] for point in t_bb3d]
     ys = [point[0][1] for point in t_bb3d]
 
-    # for point in t_bb3d:
-    #     cv2.circle(image_t,tuple(point[0]),5,(255,0,0))
-
     bb_out = {'x_min': np.amin(xs), 'y_min': np.amin(ys), 'x_max': np.amax(xs), 'y_max': np.amax(ys)}
-    # image_t = cv2.rectangle(image_t,(bb_out['x_min'],bb_out['y_min']),(bb_out['x_max'],bb_out['y_max']),(255,255,255))
 
     front = [0, 1, 4, 5]
     xs = [xs[idx] for idx in front]
@@ -35,8 +31,16 @@ def warp_generator(image, bb3d, vp1, vp2, im_h, im_w):
 
     bb_in = {'x_min': np.amin(xs), 'y_min': np.amin(ys), 'x_max': np.amax(xs), 'y_max': np.amax(ys)}
 
-    # cv2.imshow('warped',image_t)
-    # cv2.imshow('original',image_l)
+
+    # image_t = cv2.rectangle(image_t,(bb_out['x_min'],bb_out['y_min']),(bb_out['x_max'],bb_out['y_max']),(255,255,255))
+    # image_l = cv2.rectangle(image_t,(bb_in['x_min'],bb_in['y_min']),(bb_in['x_max'],bb_in['y_max']),(255,0,255))
+    # image_p = copy(image_t)
+    # for point in t_bb3d:
+    #     cv2.circle(image_p,tuple(point[0]),5,(255,0,0))
+    #
+    # cv2.imshow('out',image_t)
+    # cv2.imshow('in',image_l)
+    # cv2.imshow('all',image_p)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
 
@@ -128,15 +132,40 @@ def intersection(L1, L2):
     else:
         return False
 
+def get_pts_from_mask(mask):
+    _, mask = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
+    _, countours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    hull = cv2.convexHull(countours[0])
+    epsilon = 0.1 * cv2.arcLength(countours[0], True)
+    approx = cv2.approxPolyDP(countours[0], epsilon, True)
+    while len(approx) != 4:
+        if len(approx) > 4:
+            epsilon *= 1.1
+        else:
+            epsilon *= 0.9
+        approx = cv2.approxPolyDP(countours[0], epsilon, True)
 
-def get_transform_matrix_with_criterion(vp1, vp2, mask, im_w, im_h, constraint = 0.8, inverse = False, enforce_vp1 = True):
-    pts =[[0, 0], [mask.shape[1], 0], [mask.shape[1], mask.shape[0]], [0, mask.shape[0]]]
-    image = 255 * np.ones_like(mask)
+    # cv2.drawContours(mask, ret[1][0], 0, (255, 255, 255), 3)
+    # mask = cv2.drawContours(mask, countours, 0, (0, 0, 255), 3)
+    # cv2.imshow("Hull", mask)
+    # cv2.waitKey(0)
+
+    # pts = [[0, 0], [mask.shape[1], 0], [mask.shape[1], mask.shape[0]], [0, mask.shape[0]]]
+    approx = [point[0] for point in approx]
+
+    return [approx[0], approx[3], approx[2], approx[1]]
+
+
+def get_transform_matrix_with_criterion(vp1, vp2, mask, im_w, im_h, constraint = 0, inverse = False, enforce_vp1 = True):
+    pts = get_pts_from_mask(mask)
+    # pts =[[0, 0], [mask.shape[1], 0], [mask.shape[1], mask.shape[0]], [0, mask.shape[0]]]
+    image = 255 * np.ones([mask.shape[0], mask.shape[1]])
 
     M, IM = get_transform_matrix(vp1, vp2, mask, im_w, im_h, inverse = True, pts = pts, enforce_vp1 = enforce_vp1)
     t_image = cv2.warpPerspective(image, M, (im_w, im_h), borderMode=cv2.BORDER_CONSTANT)
 
     while cv2.countNonZero(t_image)/(im_w*im_h) < constraint:
+        print(cv2.countNonZero(t_image) / (im_w * im_h))
         # g_image = cv2.cvtColor(t_image, cv2.COLOR_BGR2GRAY)
         _, b_image = cv2.threshold(t_image, 177, 255, 0)
         b_image = 255 - b_image
@@ -180,10 +209,6 @@ def get_transform_matrix_with_criterion(vp1, vp2, mask, im_w, im_h, constraint =
     return M, IM
 
 
-
-
-
-
 def get_transform_matrix(vp1, vp2, image, im_w, im_h, inverse = False, pts = None, enforce_vp1 = True):
     vp1p1, vp1p2 = find_cornerpts(vp1, image.shape[1], image.shape[0])
     vp2p1, vp2p2 = find_cornerpts(vp2, image.shape[1], image.shape[0])
@@ -191,18 +216,54 @@ def get_transform_matrix(vp1, vp2, image, im_w, im_h, inverse = False, pts = Non
     if pts is None:
         pts = [[0,0],[image.shape[1],0],[image.shape[1],image.shape[0]],[0,image.shape[0]]]
 
-
     if (is_right(vp1, pts[vp1p1], vp2) != is_right(vp1,pts[vp1p2], vp2)) or (is_right(vp2, pts[vp2p1], vp1) != is_right(vp2,pts[vp2p2],vp1)):
-        ### Cut just a bit
-        if vp1p1 == vp2p1 or vp1p1 == vp2p2:
-            corner = vp1p1
-        else:
-            corner = vp1p2
+        # ### Cut just a bit
+        # if vp1p1 == vp2p1 or vp1p1 == vp2p2:
+        #     corner = vp1p1
+        # elif vp1p2 == vp2p1 or vp1p2 == vp2p2:
+        #     corner = vp1p2
+        #
+        # a = intersection(line(vp1,vp2),line(pts[corner],pts[(corner - 1) % 4]))
+        # b = intersection(line(vp1,vp2),line(pts[corner],pts[(corner + 1) % 4]))
+        # newcorner = intersection(line(a,b), line([image.shape[1] / 2, image.shape[0] / 2], pts[corner]))
+        # pts[corner] = np.array(newcorner) + 0.4 * (np.array([image.shape[1] / 2, image.shape[0] / 2]) - np.array(newcorner))
 
-        a = intersection(line(vp1,vp2),line(pts[corner],pts[(corner - 1) % 4]))
-        b = intersection(line(vp1,vp2),line(pts[corner],pts[(corner + 1) % 4]))
-        newcorner = intersection(line(a,b), line([image.shape[1] / 2, image.shape[0] / 2], pts[corner]))
-        pts[corner] = np.array(newcorner) + 0.4 * (np.array([image.shape[1] / 2, image.shape[0] / 2]) - np.array(newcorner))
+        p = [pts[2][1] / 2, pts[2][0]/ 2]
+        lvp = line(vp1, vp2)
+
+        # perpendicular to the line
+        a = lvp[1]
+        b = -lvp[0]
+        # going through p
+        c = a * p[0] + b * p[1]
+        lp = (a, b, c)
+        p2 = intersection(lvp, lp)
+        midp = (np.array(p) + np.array(p2))/2
+        if midp[0] < p[0] and midp[1] < p[1]:
+            corner = 0
+        elif midp[0] >= p[0] and midp[1] < p[1]:
+            corner = 1
+        elif midp[0] >= p[0] and midp[1] >= p[1]:
+            corner = 2
+        else:
+            corner = 3
+
+        a = intersection(line(vp1, vp2), line(pts[corner], pts[(corner - 1) % 4]))
+        b = intersection(line(vp1, vp2), line(pts[corner], pts[(corner + 1) % 4]))
+        newcorner = intersection(line(a, b), line([image.shape[1] / 2, image.shape[0] / 2], pts[corner]))
+        midp = np.array(newcorner) + 0.5 * (np.array([image.shape[1] / 2, image.shape[0] / 2]) - np.array(newcorner))
+        pts[corner] = midp
+
+        if vp1p1 == corner or vp1p2 == corner:
+            if abs(vp2p1 - corner) == 1:
+                vp2p1 = corner
+            if abs(vp2p2 - corner) == 1:
+                vp2p2 = corner
+        elif vp2p1 == corner or vp2p2 == corner:
+            if abs(vp1p1 - corner) == 1:
+                vp1p1 = corner
+            if abs(vp1p2 - corner) == 1:
+                vp1p2 = corner
 
     # right side
     vp1l1 = line(vp1, pts[vp1p1])
@@ -214,7 +275,6 @@ def get_transform_matrix(vp1, vp2, image, im_w, im_h, inverse = False, pts = Non
     vp2l2 = line(vp2, pts[vp2p2])
 
     t_dpts = [[0, 0], [0, im_h], [im_w, im_h], [im_w, 0]]
-
 
     ipts = []
     ipts.append(intersection(vp1l1, vp2l1))
@@ -242,8 +302,6 @@ def get_transform_matrix(vp1, vp2, image, im_w, im_h, inverse = False, pts = Non
         else:
             t_ipts[3, :] = ipts[3]
             t_ipts[2, :] = ipts[1]
-
-
 
         if inverse:
             return cv2.getPerspectiveTransform(t_ipts, t_pts), cv2.getPerspectiveTransform(t_pts, t_ipts)

@@ -3,7 +3,7 @@ import numpy as np
 import os
 import sys
 import cv2
-from warper import warp_generator
+from dataset_utils.warper import warp_generator
 
 def generate_ablation_dataset(dataset_path, images_path, t_dataset_path, t_images_path, im_w, im_h):
     with open(dataset_path, "rb") as f:
@@ -61,17 +61,16 @@ def generate_ablation_dataset(dataset_path, images_path, t_dataset_path, t_image
 
 if __name__ == "__main__":
     # generate_warped_dataset('C:/datasets/BoxCars116k/dataset.pkl', 'C:/datasets/BoxCars116k/images/',
-    #                         'C:/datasets/BoxCars116k/dataset_warped.pkl', 'C:/datasets/BoxCars116k/images_warped/', 320,
-    #                         180)
+    #                         'C:/datasets/BoxCars116k/dataset_warped.pkl', 'C:/datasets/BoxCars116k/images_warped/', 300,
+    #                         300)
 
     # generate_ablation_dataset('C:/datasets/BoxCars116k/dataset.pkl', 'C:/datasets/BoxCars116k/images/',
     #                         'C:/datasets/BoxCars116k/dataset_ablation.pkl', 'C:/datasets/BoxCars116k/images_ablation/', 320,
     #                         180)
 
-
     generate_ablation_dataset('/home/kocur/data/BoxCars116k/dataset.pkl', '/home/kocur/data/BoxCars116k/images/',
-                            '/home/kocur/data/BoxCars116k/dataset_ablation.pkl', '/home/kocur/data/BoxCars116k/images_ablation/', 320,
-                            180)
+                            '/home/kocur/data/BoxCars116k/dataset_ablation.pkl', '/home/kocur/data/BoxCars116k/images_ablation/', 300,
+                            300)
 
     # generate_warped_dataset('C:/datasets/BoxCars116k/dataset.pkl', 'C:/datasets/BoxCars116k/images/',
     #                         'C:/datasets/BoxCars116k/lol.pkl', 'C:/datasets/BoxCars116k/images_warped2/', 100,

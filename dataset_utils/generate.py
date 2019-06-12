@@ -5,9 +5,12 @@ import sys
 import cv2
 from dataset_utils.warper import warp_generator
 
-def generate_warped_dataset(dataset_path, images_path, t_dataset_path, t_images_path, im_w, im_h):
+def generate_warped_dataset(pair, dataset_path, images_path, t_dataset_path, t_images_path, im_w, im_h):
     with open(dataset_path, "rb") as f:
         ds = pickle.load(f, encoding='latin-1', fix_imports=True)
+
+    t_dataset_path = t_dataset_path.format(pair)
+    t_images_path = t_images_path.format(pair)
 
     # badcameras = ['fit', 'videnska', 'kostel', 'fitDistorted', 'prahaVinohradska', 'kostelDistorted', 'stefanikova',
     #               'uvoz']
@@ -39,8 +42,13 @@ def generate_warped_dataset(dataset_path, images_path, t_dataset_path, t_images_
             if not sample['to_camera']:
                 vp2, vp3 = vp3, vp2
 
-            # t_image, _, bb_in, bb_out = warp_generator(image, bb3d, vp1, vp2, im_h, im_w)
-            t_image, _, bb_in, bb_out = warp_generator(image, bb3d, vp3, vp2, im_h, im_w)
+            if pair == '12':
+                t_image, _, bb_in, bb_out = warp_generator(image, bb3d, vp1, vp2, im_h, im_w)
+            elif pair == '13':
+                t_image, _, bb_in, bb_out = warp_generator(image, bb3d, vp1, vp3, im_h, im_w)
+            else:
+                t_image, _, bb_in, bb_out = warp_generator(image, bb3d, vp3, vp2, im_h, im_w)
+
 
             if not os.path.exists(os.path.dirname(targetpath)):
                 os.makedirs(os.path.dirname(targetpath))
@@ -64,12 +72,12 @@ def generate_warped_dataset(dataset_path, images_path, t_dataset_path, t_images_
 
 
 if __name__ == "__main__":
-    # generate_warped_dataset('C:/datasets/BoxCars116k/dataset.pkl', 'C:/datasets/BoxCars116k/images/',
-    #                         'C:/datasets/BoxCars116k/dataset_warped23.pkl', 'C:/datasets/BoxCars116k/images_warped23/', 300,
+    # generate_warped_dataset('13','C:/datasets/BoxCars116k/dataset.pkl', 'C:/datasets/BoxCars116k/images/',
+    #                         'C:/datasets/BoxCars116k/dataset_warped{}.pkl', 'C:/datasets/BoxCars116k/images_warped{}/', 300,
     #                         300)
 
-    generate_warped_dataset('/home/k/kocur15/data/BoxCars116k/dataset.pkl', '/home/k/kocur15/data/BoxCars116k/images/',
-                            '/home/k/kocur15/data/BoxCars116k/dataset_warped23.pkl', '/home/k/kocur15/data/BoxCars116k/images_warped23/',
+    generate_warped_dataset('12','/home/k/kocur15/data/BoxCars116k/dataset.pkl', '/home/k/kocur15/data/BoxCars116k/images/',
+                            '/home/k/kocur15/data/BoxCars116k/dataset_warped{}.pkl', '/home/k/kocur15/data/BoxCars116k/images_warped{}/',
                             300, 300)
 
     # generate_warped_dataset('/home/kocur/data/BoxCars116k/dataset.pkl', '/home/kocur/data/BoxCars116k/images/',
