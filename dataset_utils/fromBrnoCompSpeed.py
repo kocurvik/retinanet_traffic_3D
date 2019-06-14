@@ -307,7 +307,7 @@ if __name__ == '__main__':
     ds_path = 'D:/Skola/PhD/data/BCS_boxed/'
     results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
 
-    pair = '23'
+    pair = '13'
 
     # vid_path = '/home/kocur/data/2016-ITS-BrnoCompSpeed/dataset/'
     # results_path = '/home/kocur/data/2016-ITS-BrnoCompSpeed/results/'

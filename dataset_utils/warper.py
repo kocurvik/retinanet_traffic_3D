@@ -105,7 +105,7 @@ def find_cornerpts(VP, pts):
     for P1 in range(len(pts)):
         bad = False
         for idx in range(len(pts)):
-            if idx != P1 and is_right(VP, pts[P1], pts[idx]):
+            if (pts[idx] != pts[P1]).any() and is_right(VP, pts[P1], pts[idx]):
                 bad = True
                 break
         if not bad:
@@ -114,7 +114,7 @@ def find_cornerpts(VP, pts):
     for P2 in range(len(pts)):
         bad = False
         for idx in range(len(pts)):
-            if idx != P2 and not is_right(VP, pts[P2], pts[idx]):
+            if (pts[idx] != pts[P2]).any() and not is_right(VP, pts[P2], pts[idx]):
                 bad = True
                 break
         if not bad:
@@ -156,8 +156,9 @@ def get_pts_from_mask(mask, vp1, vp2):
     # return [approx[0], approx[3], approx[2], approx[1]]
 
 
-def get_transform_matrix_with_criterion(vp1, vp2, mask, im_w, im_h, constraint=0.5, enforce_vp1=True):
+def get_transform_matrix_with_criterion(vp1, vp2, mask, im_w, im_h, constraint=0, enforce_vp1=True):
     pts = get_pts_from_mask(mask, vp1, vp2)
+    print(pts)
     # pts =[[0, 0], [mask.shape[1], 0], [mask.shape[1], mask.shape[0]], [0, mask.shape[0]]]
     image = 255 * np.ones([mask.shape[0], mask.shape[1]])
 
@@ -234,55 +235,55 @@ def get_transform_matrix(vp1, vp2, image, im_w, im_h, pts=None, enforce_vp1=True
     vp2p1, vp2p2 = find_cornerpts(vp2, pts)
 
 
-    if (is_right(vp1, pts[vp1p1], vp2) != is_right(vp1, pts[vp1p2], vp2)) or (
-            is_right(vp2, pts[vp2p1], vp1) != is_right(vp2, pts[vp2p2], vp1)):
-        ### Cut just a bit
-        if vp1p1 == vp2p1 or vp1p1 == vp2p2:
-            corner = vp1p1
-        elif vp1p2 == vp2p1 or vp1p2 == vp2p2:
-            corner = vp1p2
-
-        a = intersection(line(vp1,vp2),line(pts[corner],pts[(corner - 1) % 4]))
-        b = intersection(line(vp1,vp2),line(pts[corner],pts[(corner + 1) % 4]))
-        newcorner = intersection(line(a,b), line([image.shape[1] / 2, image.shape[0] / 2], pts[corner]))
-        pts[corner] = np.array(newcorner) + 0.4 * (np.array([image.shape[1] / 2, image.shape[0] / 2]) - np.array(newcorner))
-
-        p = [pts[2][1] / 2, pts[2][0]/ 2]
-        lvp = line(vp1, vp2)
-
-        # perpendicular to the line
-        a = lvp[1]
-        b = -lvp[0]
-        # going through p
-        c = a * p[0] + b * p[1]
-        lp = (a, b, c)
-        p2 = intersection(lvp, lp)
-        midp = (np.array(p) + np.array(p2))/2
-        if midp[0] < p[0] and midp[1] < p[1]:
-            corner = 0
-        elif midp[0] >= p[0] and midp[1] < p[1]:
-            corner = 1
-        elif midp[0] >= p[0] and midp[1] >= p[1]:
-            corner = 2
-        else:
-            corner = 3
-
-        a = intersection(line(vp1, vp2), line(pts[corner], pts[(corner - 1) % 4]))
-        b = intersection(line(vp1, vp2), line(pts[corner], pts[(corner + 1) % 4]))
-        newcorner = intersection(line(a, b), line([image.shape[1] / 2, image.shape[0] / 2], pts[corner]))
-        midp = np.array(newcorner) + 0.5 * (np.array([image.shape[1] / 2, image.shape[0] / 2]) - np.array(newcorner))
-        pts[corner] = midp
-
-        if vp1p1 == corner or vp1p2 == corner:
-            if abs(vp2p1 - corner) == 1:
-                vp2p1 = corner
-            if abs(vp2p2 - corner) == 1:
-                vp2p2 = corner
-        elif vp2p1 == corner or vp2p2 == corner:
-            if abs(vp1p1 - corner) == 1:
-                vp1p1 = corner
-            if abs(vp1p2 - corner) == 1:
-                vp1p2 = corner
+    # if (is_right(vp1, pts[vp1p1], vp2) != is_right(vp1, pts[vp1p2], vp2)) or (
+    #         is_right(vp2, pts[vp2p1], vp1) != is_right(vp2, pts[vp2p2], vp1)):
+    #     ### Cut just a bit
+    #     if vp1p1 == vp2p1 or vp1p1 == vp2p2:
+    #         corner = vp1p1
+    #     elif vp1p2 == vp2p1 or vp1p2 == vp2p2:
+    #         corner = vp1p2
+    #
+    #     a = intersection(line(vp1,vp2),line(pts[corner],pts[(corner - 1) % 4]))
+    #     b = intersection(line(vp1,vp2),line(pts[corner],pts[(corner + 1) % 4]))
+    #     newcorner = intersection(line(a,b), line([image.shape[1] / 2, image.shape[0] / 2], pts[corner]))
+    #     pts[corner] = np.array(newcorner) + 0.4 * (np.array([image.shape[1] / 2, image.shape[0] / 2]) - np.array(newcorner))
+    #
+    #     p = [pts[2][1] / 2, pts[2][0]/ 2]
+    #     lvp = line(vp1, vp2)
+    #
+    #     # perpendicular to the line
+    #     a = lvp[1]
+    #     b = -lvp[0]
+    #     # going through p
+    #     c = a * p[0] + b * p[1]
+    #     lp = (a, b, c)
+    #     p2 = intersection(lvp, lp)
+    #     midp = (np.array(p) + np.array(p2))/2
+    #     if midp[0] < p[0] and midp[1] < p[1]:
+    #         corner = 0
+    #     elif midp[0] >= p[0] and midp[1] < p[1]:
+    #         corner = 1
+    #     elif midp[0] >= p[0] and midp[1] >= p[1]:
+    #         corner = 2
+    #     else:
+    #         corner = 3
+    #
+    #     a = intersection(line(vp1, vp2), line(pts[corner], pts[(corner - 1) % 4]))
+    #     b = intersection(line(vp1, vp2), line(pts[corner], pts[(corner + 1) % 4]))
+    #     newcorner = intersection(line(a, b), line([image.shape[1] / 2, image.shape[0] / 2], pts[corner]))
+    #     midp = np.array(newcorner) + 0.5 * (np.array([image.shape[1] / 2, image.shape[0] / 2]) - np.array(newcorner))
+    #     pts[corner] = midp
+    #
+    #     if vp1p1 == corner or vp1p2 == corner:
+    #         if abs(vp2p1 - corner) == 1:
+    #             vp2p1 = corner
+    #         if abs(vp2p2 - corner) == 1:
+    #             vp2p2 = corner
+    #     elif vp2p1 == corner or vp2p2 == corner:
+    #         if abs(vp1p1 - corner) == 1:
+    #             vp1p1 = corner
+    #         if abs(vp1p2 - corner) == 1:
+    #             vp1p2 = corner
 
     # right side
     vp1l1 = line(vp1, pts[vp1p1])
