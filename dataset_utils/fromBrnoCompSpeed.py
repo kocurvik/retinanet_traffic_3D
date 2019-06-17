@@ -307,7 +307,7 @@ if __name__ == '__main__':
     ds_path = 'D:/Skola/PhD/data/BCS_boxed/'
     results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
 
-    pair = '23'
+    pair = '12'
 
     # vid_path = '/home/kocur/data/2016-ITS-BrnoCompSpeed/dataset/'
     # results_path = '/home/kocur/data/2016-ITS-BrnoCompSpeed/results/'
@@ -315,7 +315,7 @@ if __name__ == '__main__':
 
     vid_lists = []
     calib_lists = []
-    for i in range(4,7):
+    for i in range(0,7):
         dir_list = []
         dir_list.append('session{}_center'.format(i))
         dir_list.append('session{}_left'.format(i))

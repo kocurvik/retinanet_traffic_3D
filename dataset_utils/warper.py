@@ -74,34 +74,6 @@ def unwarp_inference(image, M, bb_in, bb_out):
 
 # find appropriate corner points
 def find_cornerpts(VP, pts):
-    # x = VP[0]
-    # y = VP[1]
-    # if (x <= 0 and y <= 0):
-    #     P1 = 3
-    #     P2 = 1
-    # elif (0 <= x and x <= w and y <= 0):
-    #     P1 = 0
-    #     P2 = 1
-    # elif (w <= x and y <= 0):
-    #     P1 = 0
-    #     P2 = 2
-    # elif (w <= x and 0 <= y and y <= h):
-    #     P1 = 1
-    #     P2 = 2
-    # elif (w <= x and h <= y):
-    #     P1 = 1
-    #     P2 = 3
-    # elif (0 <= x and x <= w and h <= y):
-    #     P1 = 2
-    #     P2 = 3
-    # elif (x <= 0 and h <= y):
-    #     P1 = 2
-    #     P2 = 0
-    # else:
-    #     P1 = 3
-    #     P2 = 0
-
-
     for P1 in range(len(pts)):
         bad = False
         for idx in range(len(pts)):
@@ -120,8 +92,6 @@ def find_cornerpts(VP, pts):
         if not bad:
             break
 
-    #P1 is to the right
-    #P2 is to the left
     return P1, P2
 
 
@@ -135,25 +105,6 @@ def get_pts_from_mask(mask, vp1, vp2):
     pts = pts[[idx1, idx2, idx3, idx4]]
 
     return [pts[0], pts[3], pts[2], pts[1]]
-
-    # epsilon = 0.1 * cv2.arcLength(countours[0], True)
-    # approx = cv2.approxPolyDP(countours[0], epsilon, True)
-    # while len(approx) != 4:
-    #     if len(approx) > 4:
-    #         epsilon *= 1.1
-    #     else:
-    #         epsilon *= 0.9
-    #     approx = cv2.approxPolyDP(countours[0], epsilon, True)
-
-    # cv2.drawContours(mask, ret[1][0], 0, (255, 255, 255), 3)
-    # mask = cv2.drawContours(mask, countours, 0, (0, 0, 255), 3)
-    # cv2.imshow("Hull", mask)
-    # cv2.waitKey(0)
-
-    # pts = [[0, 0], [mask.shape[1], 0], [mask.shape[1], mask.shape[0]], [0, mask.shape[0]]]
-    # approx = [point[0] for point in approx]
-    #
-    # return [approx[0], approx[3], approx[2], approx[1]]
 
 
 def get_transform_matrix_with_criterion(vp1, vp2, mask, im_w, im_h, constraint=0.8, enforce_vp1=True):
@@ -171,14 +122,8 @@ def get_transform_matrix_with_criterion(vp1, vp2, mask, im_w, im_h, constraint=0
         _, b_image = cv2.threshold(t_image, 177, 255, 0)
         b_image = 255 - b_image
 
-        best = -1
-        for i in range(len(pts)):
-            if pts[i][1] > best:
-                best = pts[i][1]
-                best_idx = i
-
-        pts[best_idx][1] -= 5
-
+        mask = mask[:-5,:]
+        pts = get_pts_from_mask(mask, vp1, vp2)
         # cv2.imshow("t_image", b_image)
         # cv2.waitKey(0)
 
@@ -217,8 +162,8 @@ def get_transform_matrix(vp1, vp2, image, im_w, im_h, pts=None, enforce_vp1=True
     image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
     for p in ipts:
         image = cv2.circle(image,p,40,(0,0,255),thickness=3)
-    cv2.imshow("Mask with pts", image)
-    cv2.waitKey(0)
+    # cv2.imshow("Mask with pts", image)
+    # cv2.waitKey(0)
 
     if enforce_vp1:
 
@@ -246,17 +191,6 @@ def get_transform_matrix(vp1, vp2, image, im_w, im_h, pts=None, enforce_vp1=True
 
     ipts = np.array(ipts, np.float32)
 
-    # dpts = [[0, 0], [0, image.shape[0]], [image.shape[1], image.shape[0]], [image.shape[1], 0]]
-    # perms = itertools.permutations(range(4))
-    # min = 50000000
-    # for list in perms:
-    #     val = reduce((lambda x, y: x + y),
-    #                  [sqrt((ipts[idx][0] - dpts[list[idx]][0]) ** 2 + (ipts[idx][1] - dpts[list[idx]][1]) ** 2) for idx
-    #                   in range(4)])
-    #     if val < min:
-    #         res = list
-    #         min = val
-
     x_order = np.argsort(ipts[:, 0])
     set_x_left = set(x_order[:2])
     set_x_right = set(x_order[2:])
@@ -276,7 +210,6 @@ def get_transform_matrix(vp1, vp2, image, im_w, im_h, pts=None, enforce_vp1=True
     res.append(set_x_right.intersection(set_y_bottom).pop())
     res.append(set_x_right.intersection(set_y_top).pop())
 
-    # t_pts = np.array([t_dpts[idx] for idx in res], np.float32)
     t_pts = np.array(t_dpts, np.float32)
     t_ipts = ipts[res,:]
 
