@@ -307,7 +307,7 @@ if __name__ == '__main__':
     ds_path = 'D:/Skola/PhD/data/BCS_boxed/'
     results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
 
-    pair = '13'
+    pair = '23'
 
     # vid_path = '/home/kocur/data/2016-ITS-BrnoCompSpeed/dataset/'
     # results_path = '/home/kocur/data/2016-ITS-BrnoCompSpeed/results/'
@@ -321,9 +321,9 @@ if __name__ == '__main__':
         dir_list.append('session{}_left'.format(i))
         dir_list.append('session{}_right'.format(i))
         vid_list = [os.path.join(vid_path, d, 'video.avi') for d in dir_list]
-        calib_list = [os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list]
+        # calib_list = [os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list]
 
-        # calib_list = [os.path.join(results_path, d, 'system_SochorCVIU_ManualCalib_ManualScale.json') for d in dir_list]
+        calib_list = [os.path.join(results_path, d, 'system_SochorCVIU_ManualCalib_ManualScale.json') for d in dir_list]
         vid_lists.append(vid_list)
         calib_lists.append(calib_list)
 
