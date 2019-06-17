@@ -112,11 +112,6 @@ class BCS_boxer(object):
         image = cv2.warpPerspective(np.array(200 * image), M, (self.im_w, self.im_h), borderMode=cv2.BORDER_CONSTANT)
         _, image = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY)
 
-
-        cv2.imshow("Transform", image)
-        cv2.waitKey(0)
-
-
         # x_min = roi[1]/(1920/self.im_w)
         # x_max = roi[3]/(1920/self.im_w)
         # y_min = roi[0]/(1080/self.im_h)
@@ -176,8 +171,8 @@ class BCS_boxer(object):
         image = cv2.circle(image,tuple(cy1),2,(0,255,0))
         image = cv2.circle(image,tuple(cy2),2,(0,0,255))
 
-        cv2.imshow("Detects", image)
-        cv2.waitKey(0)
+        # cv2.imshow("Detects", image)
+        # cv2.waitKey(0)
 
         cy = min(cy1[1], cy2[1])
 
@@ -189,8 +184,8 @@ class BCS_boxer(object):
         elif centery > 1:
             centery = 1
 
-        cv2.imshow("Debug", image)
-        cv2.waitKey(0)
+        # cv2.imshow("Debug", image)
+        # cv2.waitKey(0)
 
         box = {'class_id': cls,
                'x_min': x_min,
@@ -254,16 +249,12 @@ class BCS_boxer(object):
             frame = cv2.bitwise_and(frame, frame, mask=mask)
             t_image = cv2.warpPerspective(frame, M, (self.im_w, self.im_h), borderMode=cv2.BORDER_CONSTANT)
 
-            cv2.imshow('Original', frame)
-            cv2.imshow('Warped',t_image)
-            cv2.waitKey(0)
-
-            break
+            # cv2.imshow('Original', frame)
+            # cv2.imshow('Warped',t_image)
+            # cv2.waitKey(0)
 
             results = self.model.detect([frame])
-
             r = results[0]
-
 
             for idx in range(len(r['class_ids'])):
                 if r['class_ids'][idx] in self.vehicles:
@@ -315,7 +306,7 @@ if __name__ == '__main__':
 
     vid_lists = []
     calib_lists = []
-    for i in range(0,7):
+    for i in range(4,7):
         dir_list = []
         dir_list.append('session{}_center'.format(i))
         dir_list.append('session{}_left'.format(i))
