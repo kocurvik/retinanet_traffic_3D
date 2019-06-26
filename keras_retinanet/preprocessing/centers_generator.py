@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import cv2
 import pickle
 
 import numpy as np
@@ -102,9 +103,11 @@ class Centers_Generator(object):
         self.transform_indices = []
 
         if BoxCars_dataset is not None:
+            self.dataset_name = 'BoxCars'
             self.parse_BoxCars(BoxCars_dataset, BoxCars_images)
 
         for i in BCS_sessions:
+            self.dataset_name = 'BCS'
             ds_path = os.path.join(BCS_path, 'dataset_{}.pkl'.format(i))
             im_path = os.path.join(BCS_path, 'images_{}'.format(i))
             self.parse_BCS(dataset_path=ds_path, images_path=im_path)
@@ -240,13 +243,15 @@ class Centers_Generator(object):
             )[0]
 
             # delete invalid indices
-            if len(invalid_indices):
-                warnings.warn('Image with id {} (shape {}) contains the following invalid boxes: {}.'.format(
-                    group[index],
-                    image.shape,
-                    [annotations[invalid_index, :] for invalid_index in invalid_indices]
-                ))
-                annotations_group[index] = np.delete(annotations, invalid_indices, axis=0)
+            # if len(invalid_indices):
+            #     cv2.imwrite("ID_.png".format(group[index]), image)
+            #     warnings.warn("Following warning happens in:{}".format(self.dataset_name))
+            #     warnings.warn('Image with id {} (shape {}) contains the following invalid boxes: {}.'.format(
+            #         group[index],
+            #         image.shape,
+            #         [annotations[invalid_index, :] for invalid_index in invalid_indices]
+            #     ))
+            #     annotations_group[index] = np.delete(annotations, invalid_indices, axis=0)
 
         return image_group, annotations_group
 

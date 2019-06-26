@@ -26,7 +26,7 @@ from keras import backend as K
 import keras_retinanet.models
 
 
-def test_video(model, video_path, json_path, im_w, im_h, batch, name, out_path=None, compare=False, online=True):
+def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_path=None, compare=False, online=True):
     with open(json_path, 'r+') as file:
         # with open(os.path.join(os.path.dirname(json_path), 'system_retinanet_first.json'), 'r+') as file:
         structure = json.load(file)
@@ -42,22 +42,19 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, out_path=N
     mask = cv2.imread(os.path.join(video_path, 'video_mask.png'), 0)
 
     ret, frame = cap.read()
-    # pts = [[100, 200], [1440, 200], [1440, 1080], [100, 1080]]
-    pts = None
-    # M, IM = get_transform_matrix(vp3, vp2, frame, im_w, im_h, inverse=True, pts=pts)
 
-    M, IM = get_transform_matrix_with_criterion(vp3, vp2, mask, im_w, im_h)
+    if pair == '12':
+        M, IM = get_transform_matrix_with_criterion(vp1, vp2, mask, im_w, im_h)
+        vp1_t = np.array([vp3], dtype="float32")
+        vp1_t = np.array([vp1_t])
 
+    elif pair == '23':
+        M, IM = get_transform_matrix_with_criterion(vp3, vp2, mask, im_w, im_h)
 
     mg = np.array(np.meshgrid(range(im_w), range(im_h)))
     mg = np.reshape(np.transpose(mg, (1, 2, 0)), (im_w * im_h, 2))
     mg = np.array([[point] for point in mg]).astype(np.float32)
     map = np.reshape(cv2.perspectiveTransform(mg, np.array(IM)), (im_h, im_w, 2))
-
-    vp1_t = np.array([vp1], dtype="float32")
-    vp1_t = np.array([vp1_t])
-    vp1_t = cv2.perspectiveTransform(vp1_t, M)
-    vp1_t = vp1_t[0][0]
 
     if out_path is not None:
         fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
@@ -128,7 +125,8 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, out_path=N
             print("GPU FPS: {}".format(batch / (time.time() - gpu_time)))
 
     def postprocess():
-        tracker = Tracker(json_path, IM, vp1, vp2, vp3, vp1_t, im_w, im_h, name, threshold=0.2, compare=compare)
+        tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, pair = pair, threshold=0.2, compare=compare)
+
         total_time = time.time()
         while not e_stop.isSet():
             try:
@@ -192,7 +190,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, out_path=N
     cv2.destroyAllWindows()
 
 
-def track_detections(json_path, im_w, im_h, name, threshold, fake = False):
+def track_detections(json_path, video_path, im_w, im_h, name, threshold, fake = False):
     print('Tracking: {} for t = {}'.format(name,threshold))
 
     with open(json_path, 'r+') as file:
@@ -201,21 +199,25 @@ def track_detections(json_path, im_w, im_h, name, threshold, fake = False):
 
     vp1, vp2, vp3, _, _, _ = computeCameraCalibration(camera_calibration["vp1"], camera_calibration["vp2"],
                                                       camera_calibration["pp"])
+
+    mask = cv2.imread(os.path.join(video_path, 'video_mask.png'), 0)
+
     vp1 = vp1[:-1] / vp1[-1]
     vp2 = vp2[:-1] / vp2[-1]
     vp3 = vp3[:-1] / vp3[-1]
 
     frame = np.zeros([1080, 1920])
-    pts = [[100, 200], [1440, 200], [1440, 1080], [100, 1080]]
-    # pts = None
-    M, IM = get_transform_matrix(vp3, vp2, frame, im_w, im_h, pts=pts)
+    if pair == '12':
+        M, IM = get_transform_matrix_with_criterion(vp1, vp2, mask, im_w, im_h)
+    elif pair == '23':
+        M, IM = get_transform_matrix_with_criterion(vp3, vp2, mask, im_w, im_h)
 
     vp1_t = np.array([vp1], dtype="float32")
     vp1_t = np.array([vp1_t])
     vp1_t = cv2.perspectiveTransform(vp1_t, M)
     vp1_t = vp1_t[0][0]
 
-    tracker = Tracker(json_path, IM, vp1, vp2, vp3, vp1_t, im_w, im_h, name, threshold=threshold, fake=fake, write_name='640_360_f')
+    tracker = Tracker(json_path, IM, vp1, vp2, vp3, vp1_t, im_w, im_h, name, threshold=threshold, fake=fake, write_name='640_360')
     tracker.read()
 
 def test_dataset(images_path, ds_path, json_path, im_w, im_h):
@@ -287,16 +289,17 @@ if __name__ == "__main__":
         # if i == 5:
         #     dir_list = ['session{}_center'.format(i), 'session{}_right'.format(i)]
         # else:
-        # dir_list = ['session{}_center'.format(i), 'session{}_left'.format(i), 'session{}_right'.format(i)]
+        dir_list = ['session{}_center'.format(i), 'session{}_left'.format(i), 'session{}_right'.format(i)]
         # dir_list = ['session{}_right'.format(i), 'session{}_left'.format(i),]
-        dir_list = ['session{}_left'.format(i)]
+        # dir_list = ['session{}_left'.format(i)]
         vid_list.extend([os.path.join(vid_path, d) for d in dir_list])
         calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list])
         # calib_list.extend([os.path.join(results_path, d, 'system_dubska_optimal_calib.json') for d in dir_list])
         # calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_ManualCalib_ManualScale.json') for d in dir_list])
     name = '640_360_sochor'
+    pair = '12'
 
-    model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_640_360.h5',
+    model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/valreg_640_360_12.h5',
                                               backbone_name='resnet50', convert=False)
 
     # model = keras_retinanet.models.load_model('/home/kocur/code/keras-retinanet/models/resnet50_640_360.h5',
@@ -306,7 +309,7 @@ if __name__ == "__main__":
     model._make_predict_function()
     #
     for vid, calib in zip(vid_list, calib_list):
-        test_video(model, vid, calib, 640, 360, 12, name, online=True) # out_path='D:/Skola/PhD/code/keras-retinanet/video_results/left_5.avi')
+        test_video(model, vid, calib, 640, 360, 12, name, pair, online=True) # out_path='D:/Skola/PhD/code/keras-retinanet/video_results/left_5.avi')
 
     # thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     # thresholds = [0.10, 0.12, 0.14, 0.16, 0.18, 0.20, 0.22, 0.24, 0.26, 0.28, 0.30]
@@ -314,19 +317,14 @@ if __name__ == "__main__":
 
     # for calib in calib_list:
     #     for threshold in thresholds:
-    #         track_detections(calib, 640, 360, name, threshold, fake = True)
+    #         track_detections(calib, vid, 640, 360, name, threshold, fake = True)
 
-    #
-    #
+
     # name = '640_360_late'
     #
     # for calib in calib_list:
     #     for threshold in thresholds:
-    #         track_detections(calib, 640, 360, name, threshold)
-
-
-
-
+    #         track_detections(calib, vid, 640, 360, name, threshold)
 
     # test_dataset('D:/Skola/PhD/data/BCS_boxed/images_0', 'D:/Skola/PhD/data/BCS_boxed/dataset_0.pkl',
     #              'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/session0_center/system_dubska_optimal_calib.json',

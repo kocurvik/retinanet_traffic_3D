@@ -21,14 +21,15 @@ import os
 
 # from dataset_utils.warper import get_transform_matrix, intersection, line
 if os.name == 'nt':
-    from dataset_utils.warper import get_transform_matrix, get_transform_matrix_with_criterion
-    from dataset_utils.geometry import line, intersection, computeCameraCalibration
+    from warper import get_transform_matrix, get_transform_matrix_with_criterion
+    from geometry import line, intersection, computeCameraCalibration
 
     COCO_MODEL_PATH = os.path.join('D:/Skola/PhD/code/Mask_RCNN', "mask_rcnn_coco.h5")
 else:
-    from warper import get_transform_matrix, intersection, line, computeCameraCalibration
+    from warper import get_transform_matrix, get_transform_matrix_with_criterion
+    from geometry import line, intersection, computeCameraCalibration
 
-    COCO_MODEL_PATH = os.path.join('/home/kocur/code/Mask_RCNN', "mask_rcnn_coco.h5")
+    COCO_MODEL_PATH = os.path.join('/home/k/kocur15/code/Mask_RCNN', "mask_rcnn_coco.h5")
 ROOT_DIR = os.getcwd()
 MODEL_DIR = os.path.join(ROOT_DIR, "logs")
 # COCO_MODEL_PATH = os.path.join('D:\Skola\PhD\code\MASK_RCNN', "mask_rcnn_coco.h5")
@@ -285,28 +286,29 @@ class BCS_boxer(object):
             print("Saving, vid:{}, pos:{}".format(self.vid,self.pos))
 
         cap.release()
-        cv2.destroyAllWindows()
+        # cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     config = InferenceConfig()
     config.display()
     model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=config)
     model.load_weights(COCO_MODEL_PATH, by_name=True)
 
-    vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
-    ds_path = 'D:/Skola/PhD/data/BCS_boxed/'
-    results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
+    # vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
+    # ds_path = 'D:/Skola/PhD/data/BCS_boxed/'
+    # results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
 
-    pair = '12'
+    pair = '23'
 
-    # vid_path = '/home/kocur/data/2016-ITS-BrnoCompSpeed/dataset/'
-    # results_path = '/home/kocur/data/2016-ITS-BrnoCompSpeed/results/'
-    # ds_path = '/home/kocur/data/BCS_boxed/'
+    vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
+    results_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/results/'
+    ds_path = '/home/k/kocur15/data/BCS_boxed/'
 
     vid_lists = []
     calib_lists = []
-    for i in range(4,7):
+    for i in range(0,7):
         dir_list = []
         dir_list.append('session{}_center'.format(i))
         dir_list.append('session{}_left'.format(i))
@@ -323,6 +325,6 @@ if __name__ == '__main__':
 
     # vid_list = [os.path.join(vid_path, d, 'video.avi') for d in dir_list]
 
-    for i in range(3):
+    for i in range(4):
         boxer = BCS_boxer(model, vid_lists[i], calib_lists[i], pkl_paths[i], image_paths[i], 960, 540, save_often=True, n = 25)
         boxer.process()

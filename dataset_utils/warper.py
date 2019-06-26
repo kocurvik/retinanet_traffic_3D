@@ -3,7 +3,15 @@ import numpy as np
 from math import sqrt
 from copy import copy
 
-from dataset_utils.geometry import is_right, line, intersection, distance
+from geometry import is_right, line, intersection, distance
+
+
+#wrapper for annoying conversions
+def warp_point(p, M):
+    p_t = np.array([p], dtype="float32")
+    p_t = np.array([p_t])
+    p_t = cv2.perspectiveTransform(p_t, M)
+    return p_t[0][0]
 
 
 def warp_generator(image, bb3d, vp1, vp2, im_h, im_w):
@@ -74,6 +82,7 @@ def unwarp_inference(image, M, bb_in, bb_out):
 
 # find appropriate corner points
 def find_cornerpts(VP, pts):
+    pts = np.array(pts)
     for P1 in range(len(pts)):
         bad = False
         for idx in range(len(pts)):
@@ -159,9 +168,9 @@ def get_transform_matrix(vp1, vp2, image, im_w, im_h, pts=None, enforce_vp1=True
     ipts.append(intersection(vp1l1, vp2l2))
     ipts.append(intersection(vp1l2, vp2l2))
 
-    image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-    for p in ipts:
-        image = cv2.circle(image,p,40,(0,0,255),thickness=3)
+    # image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+    # for p in ipts:
+    #     image = cv2.circle(image,p,40,(0,0,255),thickness=3)
     # cv2.imshow("Mask with pts", image)
     # cv2.waitKey(0)
 

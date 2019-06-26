@@ -28,7 +28,7 @@ import tensorflow as tf
 # Allow relative imports when being executed as script.
 if __name__ == "__main__" and __package__ is None:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-    import keras_retinanet.bin  # noqa: F401
+    # import keras_retinanet.bin  # noqa: F401
     __package__ = "keras_retinanet.bin"
 
 # Change these to absolute imports if you copy this script outside the keras_retinanet package.
@@ -262,9 +262,9 @@ def create_generators(args, preprocess_image):
         #     **common_args
         # )
 
-        BCS_path = '/home/kocur/data/BCS_boxed/'
-        Box_images = '/home/kocur/data/BoxCars116k/images_warped/'
-        Box_dataset = '/home/kocur/data/BoxCars116k/dataset_warped.pkl'
+        BCS_path = '/home/k/kocur15/data/BCS_boxed{}/'.format(args.pair)
+        Box_images = '/home/k/kocur15/data/BoxCars116k/images_warped{}/'.format(args.pair)
+        Box_dataset = '/home/k/kocur15/data/BoxCars116k/dataset_warped{}.pkl'.format(args.pair)
 
         train_generator = Centers_Generator(
             BCS_path,
@@ -482,6 +482,7 @@ def parse_args(args):
     parser.add_argument('--centers',         help='Use centers submodels.', action='store_true')
     parser.add_argument('--fake',            help='Set centers to 0 on training.', action='store_true')
     parser.add_argument('--ablation',        help='Ablation training.', action='store_true')
+    parser.add_argument('--pair',            help='Select pair from 12 and 23', default='23')
 
     return check_args(parser.parse_args(args))
 
