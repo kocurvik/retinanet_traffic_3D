@@ -262,11 +262,23 @@ def create_generators(args, preprocess_image):
         #     **common_args
         # )
 
-        BCS_path = '/home/k/kocur15/data/BCS_boxed{}/'.format(args.pair)
-        Box_images = '/home/k/kocur15/data/BoxCars116k/images_warped{}/'.format(args.pair)
-        Box_dataset = '/home/k/kocur15/data/BoxCars116k/dataset_warped{}.pkl'.format(args.pair)
+        BCS_path = '/home/k/kocur15/data/BCS_boxed{}/'
+        Box_images = '/home/k/kocur15/data/BoxCars116k/images_warped{}/'
+        Box_dataset = '/home/k/kocur15/data/BoxCars116k/dataset_warped{}.pkl'
+
+        if args.pair == '12':
+            pairs = ['12']
+        elif args.pair == '23':
+            pairs = ['23']
+        elif args.pair == 'both':
+            pairs = ['12', '23']
+        else:
+            pairs = ['23']
+
+
 
         train_generator = Centers_Generator(
+            pairs,
             BCS_path,
             Box_dataset,
             Box_images,
@@ -276,6 +288,7 @@ def create_generators(args, preprocess_image):
         )
 
         validation_generator = Centers_Generator(
+            pairs,
             BCS_path,
             None,
             None,
@@ -293,6 +306,7 @@ def create_generators(args, preprocess_image):
         Box_dataset = '/home/kocur/data/BoxCars116k/dataset_ablation.pkl'
 
         train_generator = Centers_Generator(
+            [None],
             BCS_path,
             Box_dataset,
             Box_images,
@@ -302,6 +316,7 @@ def create_generators(args, preprocess_image):
         )
 
         validation_generator = Centers_Generator(
+            [None],
             BCS_path,
             None,
             None,

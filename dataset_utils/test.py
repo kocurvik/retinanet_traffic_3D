@@ -41,12 +41,13 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
     cap = cv2.VideoCapture(os.path.join(video_path, 'video.avi'))
     mask = cv2.imread(os.path.join(video_path, 'video_mask.png'), 0)
 
-    ret, frame = cap.read()
+
+    # cap.set(cv2.CAP_PROP_POS_FRAMES, 1564)
+    for _ in range(1564):
+        ret, frame = cap.read()
 
     if pair == '12':
         M, IM = get_transform_matrix_with_criterion(vp1, vp2, mask, im_w, im_h)
-        vp1_t = np.array([vp3], dtype="float32")
-        vp1_t = np.array([vp1_t])
 
     elif pair == '23':
         M, IM = get_transform_matrix_with_criterion(vp3, vp2, mask, im_w, im_h)
@@ -190,7 +191,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
     cv2.destroyAllWindows()
 
 
-def track_detections(json_path, video_path, im_w, im_h, name, threshold, fake = False):
+def track_detections(json_path, video_path, pair,  im_w, im_h, name, threshold, fake = False):
     print('Tracking: {} for t = {}'.format(name,threshold))
 
     with open(json_path, 'r+') as file:
@@ -212,12 +213,7 @@ def track_detections(json_path, video_path, im_w, im_h, name, threshold, fake = 
     elif pair == '23':
         M, IM = get_transform_matrix_with_criterion(vp3, vp2, mask, im_w, im_h)
 
-    vp1_t = np.array([vp1], dtype="float32")
-    vp1_t = np.array([vp1_t])
-    vp1_t = cv2.perspectiveTransform(vp1_t, M)
-    vp1_t = vp1_t[0][0]
-
-    tracker = Tracker(json_path, IM, vp1, vp2, vp3, vp1_t, im_w, im_h, name, threshold=threshold, fake=fake, write_name='640_360')
+    tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, threshold=threshold, pair = pair, fake=fake)
     tracker.read()
 
 def test_dataset(images_path, ds_path, json_path, im_w, im_h):
@@ -317,14 +313,14 @@ if __name__ == "__main__":
 
     # for calib in calib_list:
     #     for threshold in thresholds:
-    #         track_detections(calib, vid, 640, 360, name, threshold, fake = True)
+    #         track_detections(calib, vid, pair, 640, 360, name, threshold, fake = True)
 
 
     # name = '640_360_late'
     #
     # for calib in calib_list:
     #     for threshold in thresholds:
-    #         track_detections(calib, vid, 640, 360, name, threshold)
+    #         track_detections(calib, vid, pair, 640, 360, name, threshold)
 
     # test_dataset('D:/Skola/PhD/data/BCS_boxed/images_0', 'D:/Skola/PhD/data/BCS_boxed/dataset_0.pkl',
     #              'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/session0_center/system_dubska_optimal_calib.json',

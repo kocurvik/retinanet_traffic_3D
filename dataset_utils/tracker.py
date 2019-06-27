@@ -136,9 +136,10 @@ class Tracker:
             bb_tt = [point[0] for point in bb_tt]
             center = (bb_tt[2] + bb_tt[3])/2
 
-            bb_tt.append(intersection(line(bb_tt[1], self.vp1), line(bb_tt[4], self.vp3)))
-            bb_tt.append(intersection(line(bb_tt[2], self.vp1), line(bb_tt[5], self.vp2)))
-            bb_tt.append(intersection(line(bb_tt[3], self.vp1), line(bb_tt[6], self.vp3)))
+            bb_tt.append(intersection(line(bb_tt[1], self.vp3), line(bb_tt[4], self.vp2)))
+            bb_tt.append(intersection(line(bb_tt[2], self.vp3), line(bb_tt[5], self.vp1)))
+            bb_tt.append(intersection(line(bb_tt[3], self.vp3), line(bb_tt[6], self.vp2)))
+            # print("Case at frame:{}".format(self.frame))
 
 
 
@@ -282,10 +283,10 @@ class Tracker:
             if center[1] > 1080 - 10 or center[1] < 10:
                 continue
 
-            xmin = box[-5]
-            ymin = box[-4]
-            xmax = box[-3]
-            ymax = box[-2]
+            # xmin = box[-5]
+            # ymin = box[-4]
+            # xmax = box[-3]
+            # ymax = box[-2]
 
             # if ymax > self.im_h - 2.5:
             #     continue

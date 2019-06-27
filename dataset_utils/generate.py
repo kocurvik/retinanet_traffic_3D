@@ -78,9 +78,9 @@ if __name__ == "__main__":
     #                         'C:/datasets/BoxCars116k/dataset_warped{}.pkl', 'C:/datasets/BoxCars116k/images_warped{}/', 300,
     #                         300)
 
-    generate_warped_dataset('23','/home/k/kocur15/data/BoxCars116k/dataset.pkl', '/home/k/kocur15/data/BoxCars116k/images/',
+    generate_warped_dataset('12','/home/k/kocur15/data/BoxCars116k/dataset.pkl', '/home/k/kocur15/data/BoxCars116k/images/',
                             '/home/k/kocur15/data/BoxCars116k/dataset_warped{}.pkl', '/home/k/kocur15/data/BoxCars116k/images_warped{}/',
-                            300, 300)
+                            320, 180)
 
     # generate_warped_dataset('/home/kocur/data/BoxCars116k/dataset.pkl', '/home/kocur/data/BoxCars116k/images/',
     #                         '/home/kocur/data/BoxCars116k/dataset_warped.pkl', '/home/kocur/data/BoxCars116k/images_warped/', 320,

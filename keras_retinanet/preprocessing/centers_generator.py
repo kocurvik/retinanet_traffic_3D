@@ -53,6 +53,7 @@ class Centers_Generator(object):
 
     def __init__(
         self,
+        pairs,
         BCS_path,
         BoxCars_dataset,
         BoxCars_images,
@@ -102,15 +103,16 @@ class Centers_Generator(object):
         self.image_data = {}
         self.transform_indices = []
 
-        if BoxCars_dataset is not None:
-            self.dataset_name = 'BoxCars'
-            self.parse_BoxCars(BoxCars_dataset, BoxCars_images)
+        for pair in pairs:
+            if BoxCars_dataset is not None:
+                self.dataset_name = 'BoxCars'
+                self.parse_BoxCars(BoxCars_dataset.format(pair), BoxCars_images.format(pair))
 
-        for i in BCS_sessions:
-            self.dataset_name = 'BCS'
-            ds_path = os.path.join(BCS_path, 'dataset_{}.pkl'.format(i))
-            im_path = os.path.join(BCS_path, 'images_{}'.format(i))
-            self.parse_BCS(dataset_path=ds_path, images_path=im_path)
+            for i in BCS_sessions:
+                self.dataset_name = 'BCS'
+                ds_path = os.path.join(BCS_path.format(pair), 'dataset_{}.pkl'.format(i))
+                im_path = os.path.join(BCS_path.format(pair), 'images_{}'.format(i))
+                self.parse_BCS(dataset_path=ds_path, images_path=im_path)
 
         print("Generator size: {}".format(self.size()))
 
@@ -243,15 +245,15 @@ class Centers_Generator(object):
             )[0]
 
             # delete invalid indices
-            # if len(invalid_indices):
-            #     cv2.imwrite("ID_.png".format(group[index]), image)
-            #     warnings.warn("Following warning happens in:{}".format(self.dataset_name))
-            #     warnings.warn('Image with id {} (shape {}) contains the following invalid boxes: {}.'.format(
-            #         group[index],
-            #         image.shape,
-            #         [annotations[invalid_index, :] for invalid_index in invalid_indices]
-            #     ))
-            #     annotations_group[index] = np.delete(annotations, invalid_indices, axis=0)
+            if len(invalid_indices):
+                cv2.imwrite("ID_.png".format(group[index]), image)
+                # warnings.warn("Following warning happens in:{}".format(self.dataset_name))
+                # warnings.warn('Image with id {} (shape {}) contains the following invalid boxes: {}.'.format(
+                #     group[index],
+                #     image.shape,
+                #     [annotations[invalid_index, :] for invalid_index in invalid_indices]
+                # ))
+                annotations_group[index] = np.delete(annotations, invalid_indices, axis=0)
 
         return image_group, annotations_group
 
