@@ -246,7 +246,7 @@ class Centers_Generator(object):
 
             # delete invalid indices
             if len(invalid_indices):
-                cv2.imwrite("ID_.png".format(group[index]), image)
+                # cv2.imwrite("ID_.png".format(group[index]), image)
                 # warnings.warn("Following warning happens in:{}".format(self.dataset_name))
                 # warnings.warn('Image with id {} (shape {}) contains the following invalid boxes: {}.'.format(
                 #     group[index],

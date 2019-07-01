@@ -17,7 +17,7 @@ if __name__ == "__main__" and __package__ is None:
 
 
 from dataset_utils.tracker import Tracker
-from dataset_utils.warper import decode_3dbb, get_transform_matrix, get_transform_matrix_with_criterion
+from dataset_utils.warper import get_transform_matrix, get_transform_matrix_with_criterion
 from dataset_utils.geometry import distance, computeCameraCalibration
 from dataset_utils.writer import Writer
 from keras_retinanet.utils.image import preprocess_image
@@ -43,7 +43,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
 
 
     # cap.set(cv2.CAP_PROP_POS_FRAMES, 1564)
-    for _ in range(1564):
+    for _ in range(1500):
         ret, frame = cap.read()
 
     if pair == '12':
@@ -144,7 +144,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
                     out.write(image_b)
                 cv2.imshow('frame', image_b)
                 # cv2.imwrite('frame_c0_{}.png'.format(i),image_b)
-                if cv2.waitKey(1) & 0xFF == ord('q'):
+                if cv2.waitKey(0) & 0xFF == ord('q'):
                     e_stop.set()
             # break
             # print("Post FPS: {}".format(batch / (time.time() - post_time)))
@@ -273,15 +273,15 @@ def test_dataset(images_path, ds_path, json_path, im_w, im_h):
 
 if __name__ == "__main__":
 
-    vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
-    results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
+    # vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
+    # results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
 
-    # vid_path = '/home/kocur/data/2016-ITS-BrnoCompSpeed/dataset/'
-    # results_path = '/home/kocur/data/2016-ITS-BrnoCompSpeed/results/'
+    vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
+    results_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/results/'
 
     vid_list = []
     calib_list = []
-    for i in range(5, 7):
+    for i in range(4, 7):
         # if i == 5:
         #     dir_list = ['session{}_center'.format(i), 'session{}_right'.format(i)]
         # else:
@@ -292,28 +292,29 @@ if __name__ == "__main__":
         calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list])
         # calib_list.extend([os.path.join(results_path, d, 'system_dubska_optimal_calib.json') for d in dir_list])
         # calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_ManualCalib_ManualScale.json') for d in dir_list])
-    name = '640_360_sochor'
-    pair = '12'
 
-    model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/valreg_640_360_12.h5',
+    pair = '12'
+    name = '640_360_{}_1'.format(pair)
+
+    # model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_640_360_12_1_valreg.h5',
+    #                                           backbone_name='resnet50', convert=False)
+
+    model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/640_360_12_1/resnet50_640_360_12_1_valreg.h5',
                                               backbone_name='resnet50', convert=False)
 
-    # model = keras_retinanet.models.load_model('/home/kocur/code/keras-retinanet/models/resnet50_640_360.h5',
-    #                                           backbone_name='resnet50', convert=False)
-    #
     print(model.summary)
     model._make_predict_function()
     #
     for vid, calib in zip(vid_list, calib_list):
-        test_video(model, vid, calib, 640, 360, 12, name, pair, online=True) # out_path='D:/Skola/PhD/code/keras-retinanet/video_results/left_5.avi')
+        test_video(model, vid, calib, 640, 360, 16, name, pair, online = False) # out_path='D:/Skola/PhD/code/keras-retinanet/video_results/left_5.avi')
 
-    # thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     # thresholds = [0.10, 0.12, 0.14, 0.16, 0.18, 0.20, 0.22, 0.24, 0.26, 0.28, 0.30]
     # thresholds = [0.2]
 
-    # for calib in calib_list:
-    #     for threshold in thresholds:
-    #         track_detections(calib, vid, pair, 640, 360, name, threshold, fake = True)
+    for calib in calib_list:
+        for threshold in thresholds:
+            track_detections(calib, vid, pair, 640, 360, name, threshold, fake = False)
 
 
     # name = '640_360_late'

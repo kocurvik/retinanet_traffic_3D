@@ -497,7 +497,7 @@ def parse_args(args):
     parser.add_argument('--centers',         help='Use centers submodels.', action='store_true')
     parser.add_argument('--fake',            help='Set centers to 0 on training.', action='store_true')
     parser.add_argument('--ablation',        help='Ablation training.', action='store_true')
-    parser.add_argument('--pair',            help='Select pair from 12 and 23', default='23')
+    parser.add_argument('--pair',            help='Select pair from 12, 23 or both', default='23')
 
     return check_args(parser.parse_args(args))
 
