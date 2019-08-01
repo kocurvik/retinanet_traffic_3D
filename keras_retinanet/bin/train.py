@@ -276,13 +276,23 @@ def create_generators(args, preprocess_image):
             pairs = ['23']
 
 
+        def split_exclusion_fn_train(filename):
+            if int(filename.split("_")[-1].split(".")[0]) < 30000:
+                return True
+            return False
+
+        def split_exclusion_fn_val(filename):
+            if int(filename.split("_")[-1].split(".")[0]) >= 30000:
+                return True
+            return False
 
         train_generator = Centers_Generator(
             pairs,
             BCS_path,
             Box_dataset,
             Box_images,
-            BCS_sessions=[0,1,2],
+            BCS_sessions=[0,1,2,3],
+            split_exclusion_function=split_exclusion_fn_train,
             fake_centers = args.fake,
             **common_args
         )
@@ -292,7 +302,8 @@ def create_generators(args, preprocess_image):
             BCS_path,
             None,
             None,
-            BCS_sessions=[3],
+            BCS_sessions=[0,1,2,3],
+            split_exclusion_function=split_exclusion_fn_val,
             fake_centers = args.fake,
             **common_args
         )

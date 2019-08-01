@@ -38,6 +38,7 @@ def parse_args(args):
     parser.add_argument('--backbone', help='The backbone of the model to convert.', default='resnet50')
     parser.add_argument('--no-nms', help='Disables non maximum suppression.', dest='nms', action='store_false')
     parser.add_argument('--no-class-specific-filter', help='Disables class specific filtering.', dest='class_specific_filter', action='store_false')
+    parser.add_argument('--gpu', help='Id of the GPU to use (as reported by nvidia-smi).')
 
     return parser.parse_args(args)
 
@@ -47,6 +48,9 @@ def main(args=None):
     if args is None:
         args = sys.argv[1:]
     args = parse_args(args)
+
+    if args.gpu:
+        os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
     # load and convert model
     model = models.load_model(args.model_in, convert=True, backbone_name=args.backbone, nms=args.nms, class_specific_filter=args.class_specific_filter)

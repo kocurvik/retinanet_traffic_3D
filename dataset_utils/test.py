@@ -43,8 +43,10 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
 
 
     # cap.set(cv2.CAP_PROP_POS_FRAMES, 1564)
-    for _ in range(1500):
-        ret, frame = cap.read()
+    # for _ in range(1500):
+    #     ret, frame = cap.read()
+    ret, frame = cap.read()
+
 
     if pair == '12':
         M, IM = get_transform_matrix_with_criterion(vp1, vp2, mask, im_w, im_h)
@@ -188,7 +190,6 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
 
     if out_path is not None:
         out.release()
-    cv2.destroyAllWindows()
 
 
 def track_detections(json_path, video_path, pair,  im_w, im_h, name, threshold, fake = False):
@@ -268,8 +269,6 @@ def test_dataset(images_path, ds_path, json_path, im_w, im_h):
         if cv2.waitKey(0) & 0xFF == ord('q'):
             break
 
-    cv2.destroyAllWindows()
-
 
 if __name__ == "__main__":
 
@@ -293,26 +292,27 @@ if __name__ == "__main__":
         # calib_list.extend([os.path.join(results_path, d, 'system_dubska_optimal_calib.json') for d in dir_list])
         # calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_ManualCalib_ManualScale.json') for d in dir_list])
 
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     pair = '12'
-    name = '640_360_{}_1'.format(pair)
+    name = '640_360_{}_3'.format(pair)
 
     # model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_640_360_12_1_valreg.h5',
     #                                           backbone_name='resnet50', convert=False)
 
-    model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/640_360_12_1/resnet50_640_360_12_1_valreg.h5',
+    model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}_val.h5'.format(name, name),
                                               backbone_name='resnet50', convert=False)
 
     print(model.summary)
     model._make_predict_function()
     #
     for vid, calib in zip(vid_list, calib_list):
-        test_video(model, vid, calib, 640, 360, 16, name, pair, online = False) # out_path='D:/Skola/PhD/code/keras-retinanet/video_results/left_5.avi')
+        test_video(model, vid, calib, 640, 360, 25, name, pair, online = False) # out_path='D:/Skola/PhD/code/keras-retinanet/video_results/left_5.avi')
 
     thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     # thresholds = [0.10, 0.12, 0.14, 0.16, 0.18, 0.20, 0.22, 0.24, 0.26, 0.28, 0.30]
     # thresholds = [0.2]
 
-    for calib in calib_list:
+    for calib, vid in zip(calib_list, vid_list):
         for threshold in thresholds:
             track_detections(calib, vid, pair, 640, 360, name, threshold, fake = False)
 

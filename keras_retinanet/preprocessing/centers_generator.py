@@ -60,6 +60,7 @@ class Centers_Generator(object):
         BCS_sessions = range(4),
         fake_centers = False,
         no_centers = False,
+        split_exclusion_function = None,
         batch_size=1,
         group_method='random',  # one of 'none', 'random', 'ratio'
         shuffle_groups=True,
@@ -99,6 +100,8 @@ class Centers_Generator(object):
 
         self.fake_centers = fake_centers
         self.no_centers = no_centers
+
+        self.split_exclusion_function = split_exclusion_function
 
         self.image_data = {}
         self.transform_indices = []
@@ -410,8 +413,15 @@ class Centers_Generator(object):
         with open(dataset_path, "rb") as f:
             ds = pickle.load(f, encoding='latin-1', fix_imports=True)
 
-        for entry in ds:
+
+
+        for i, entry in enumerate(ds):
+
             filename = os.path.join(images_path, entry['filename'])
+            if self.split_exclusion_function is not None:
+                if self.split_exclusion_function(filename):
+                    continue
+
             if filename not in self.image_data:
                 self.image_data[filename] = []
                 self.image_names.append(filename)
