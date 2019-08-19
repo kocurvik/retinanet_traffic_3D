@@ -246,21 +246,57 @@ def create_generators(args, preprocess_image):
         # Box_images = 'C:/datasets/BoxCars116k/images_warped'
         # Box_dataset = 'C:/datasets/BoxCars116k/dataset_warped.pkl'
 
-        # train_generator = Centers_Generator(
-        #     BCS_path,
-        #     Box_dataset,
-        #     Box_images,
-        #     BCS_sessions=[0],
-        #     **common_args
-        # )
-        #
-        # validation_generator = Centers_Generator(
-        #     BCS_path,
-        #     None,
-        #     None,
-        #     BCS_sessions=[0],
-        #     **common_args
-        # )
+        BCS_path = '/home/k/kocur15/data/BCS_boxed{}/'
+        Box_images = '/home/k/kocur15/data/BoxCars116k/images_warped{}/'
+        Box_dataset = '/home/k/kocur15/data/BoxCars116k/dataset_warped{}.pkl'
+
+        if args.pair == '12':
+            pairs = ['12']
+        elif args.pair == '23':
+            pairs = ['23']
+        elif args.pair == 'both':
+            pairs = ['12', '23']
+        else:
+            pairs = ['23']
+
+
+        def split_exclusion_fn_train(filename):
+            if int(filename.split("_")[-1].split(".")[0]) < 30000:
+                return True
+            return False
+
+        def split_exclusion_fn_val(filename):
+            if int(filename.split("_")[-1].split(".")[0]) >= 30000:
+                return True
+            return False
+
+        train_generator = Centers_Generator(
+            pairs,
+            BCS_path,
+            Box_dataset,
+            Box_images,
+            BCS_sessions=[0,1,2,3],
+            split_exclusion_function=split_exclusion_fn_train,
+            **common_args
+        )
+
+        validation_generator = Centers_Generator(
+            pairs,
+            BCS_path,
+            None,
+            None,
+            BCS_sessions=[0,1,2,3],
+            split_exclusion_function=split_exclusion_fn_val,
+            **common_args
+        )
+        return train_generator, validation_generator
+
+    if args.no_centers:
+        args.dataset_type = 'BC+BCS'
+
+        # BCS_path = 'D:/Skola/PhD/data/BCS_boxed/'
+        # Box_images = 'C:/datasets/BoxCars116k/images_warped'
+        # Box_dataset = 'C:/datasets/BoxCars116k/dataset_warped.pkl'
 
         BCS_path = '/home/k/kocur15/data/BCS_boxed{}/'
         Box_images = '/home/k/kocur15/data/BoxCars116k/images_warped{}/'
@@ -293,7 +329,7 @@ def create_generators(args, preprocess_image):
             Box_images,
             BCS_sessions=[0,1,2,3],
             split_exclusion_function=split_exclusion_fn_train,
-            fake_centers = args.fake,
+            no_centers = True,
             **common_args
         )
 
@@ -304,7 +340,7 @@ def create_generators(args, preprocess_image):
             None,
             BCS_sessions=[0,1,2,3],
             split_exclusion_function=split_exclusion_fn_val,
-            fake_centers = args.fake,
+            no_centers = True,
             **common_args
         )
         return train_generator, validation_generator
@@ -312,17 +348,28 @@ def create_generators(args, preprocess_image):
     if args.ablation:
         args.dataset_type = 'ablation'
 
-        BCS_path = '/home/kocur/data/BCS_boxed/'
-        Box_images = '/home/kocur/data/BoxCars116k/images_ablation/'
-        Box_dataset = '/home/kocur/data/BoxCars116k/dataset_ablation.pkl'
+        BCS_path = '/home/k/kocur15/data/BCS_boxed/'
+        Box_images = '/home/k/kocur15/data/BoxCars116k/images_ablation/'
+        Box_dataset = '/home/k/kocur15/data/BoxCars116k/dataset_ablation.pkl'
+
+        def split_exclusion_fn_train(filename):
+            if int(filename.split("_")[-1].split(".")[0]) < 30000:
+                return True
+            return False
+
+        def split_exclusion_fn_val(filename):
+            if int(filename.split("_")[-1].split(".")[0]) >= 30000:
+                return True
+            return False
 
         train_generator = Centers_Generator(
             [None],
             BCS_path,
             Box_dataset,
             Box_images,
-            BCS_sessions=[0,1,2],
+            BCS_sessions=[0,1,2,3],
             no_centers = True,
+            split_exclusion_function = split_exclusion_fn_train,
             **common_args
         )
 
@@ -332,7 +379,8 @@ def create_generators(args, preprocess_image):
             None,
             None,
             no_centers = True,
-            BCS_sessions=[3],
+            split_exclusion_function = split_exclusion_fn_val,
+            BCS_sessions=[0,1,2,3],
             **common_args
         )
         return train_generator, validation_generator
@@ -506,7 +554,7 @@ def parse_args(args):
     parser.add_argument('--image-min-side',  help='Rescale the image so the smallest side is min_side.', type=int, default=800)
     parser.add_argument('--image-max-side',  help='Rescale the image if the largest side is larger than max_side.', type=int, default=1333)
     parser.add_argument('--centers',         help='Use centers submodels.', action='store_true')
-    parser.add_argument('--fake',            help='Set centers to 0 on training.', action='store_true')
+    parser.add_argument('--no-centers',      help='Set centers to 0 on training.', action='store_true')
     parser.add_argument('--ablation',        help='Ablation training.', action='store_true')
     parser.add_argument('--pair',            help='Select pair from 12, 23 or both', default='23')
 

@@ -58,8 +58,8 @@ class Centers_Generator(object):
         BoxCars_dataset,
         BoxCars_images,
         BCS_sessions = range(4),
-        fake_centers = False,
         no_centers = False,
+        fake_centers = False,
         split_exclusion_function = None,
         batch_size=1,
         group_method='random',  # one of 'none', 'random', 'ratio'

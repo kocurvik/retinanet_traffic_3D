@@ -23,8 +23,10 @@ def generate_ablation_dataset(dataset_path, images_path, t_dataset_path, t_image
         #     continue
         # sample = ds['samples'][24444]
         camera = sample['camera']
-        if camera in unacceptable:
+        print(sample['to_camera'])
+        if camera in unacceptable or not sample['to_camera']:
             continue
+
         t_sample = {'instances': [], 'id': s_id, 'to_camera': sample['to_camera'], 'annotation': sample['annotation']}
         t_sample.update({'id': s_id})
         for instance in sample['instances']:
@@ -46,7 +48,7 @@ def generate_ablation_dataset(dataset_path, images_path, t_dataset_path, t_image
                 os.makedirs(os.path.dirname(targetpath))
 
             print(targetpath)
-            print(cv2.imwrite(targetpath, t_image))
+            cv2.imwrite(targetpath, t_image)
 
             bb_out = {'x_min': np.amin(xs), 'y_min': np.amin(ys), 'x_max': np.amax(xs), 'y_max': np.amax(ys)}
 
@@ -68,9 +70,8 @@ if __name__ == "__main__":
     #                         'C:/datasets/BoxCars116k/dataset_ablation.pkl', 'C:/datasets/BoxCars116k/images_ablation/', 320,
     #                         180)
 
-    generate_ablation_dataset('/home/kocur/data/BoxCars116k/dataset.pkl', '/home/kocur/data/BoxCars116k/images/',
-                            '/home/kocur/data/BoxCars116k/dataset_ablation.pkl', '/home/kocur/data/BoxCars116k/images_ablation/', 300,
-                            300)
+    generate_ablation_dataset('/home/k/kocur15/data/BoxCars116k/dataset.pkl', '/home/k/kocur15/data/BoxCars116k/images/',
+                            '/home/k/kocur15/data/BoxCars116k/dataset_ablation.pkl', '/home/k/kocur15/data/BoxCars116k/images_ablation/', 320, 180)
 
     # generate_warped_dataset('C:/datasets/BoxCars116k/dataset.pkl', 'C:/datasets/BoxCars116k/images/',
     #                         'C:/datasets/BoxCars116k/lol.pkl', 'C:/datasets/BoxCars116k/images_warped2/', 100,

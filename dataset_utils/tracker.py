@@ -63,10 +63,10 @@ class Tracker:
 
 
     def draw_box(self, box, id, image_b):
-        xmin = box[-5]
-        ymin = box[-4]
-        xmax = box[-3]
-        ymax = box[-2]
+        xmin = box[1]
+        ymin = box[2]
+        xmax = box[3]
+        ymax = box[4]
         if self.fake:
             cy_0 = ymin
         else:
@@ -165,10 +165,10 @@ class Tracker:
         return image_b, center
 
     def get_center(self, box):
-        xmin = box[-5]
-        ymin = box[-4]
-        xmax = box[-3]
-        ymax = box[-2]
+        xmin = box[1]
+        ymin = box[2]
+        xmax = box[3]
+        ymax = box[4]
         if self.fake:
             cy_0 = ymin
         else:
@@ -324,8 +324,8 @@ class Tracker:
             # self.vy = 0
 
         def iou(self, box):
-            last_box = self.boxes[-1][np.newaxis, -5:-1].astype(np.float64)
-            query_box = box[np.newaxis,-5:-1].astype(np.float64)
+            last_box = self.boxes[-1][np.newaxis, 1:5].astype(np.float64)
+            query_box = box[np.newaxis,1:5].astype(np.float64)
 
             return compute_overlap(last_box, query_box)
 

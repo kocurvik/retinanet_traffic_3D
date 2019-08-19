@@ -26,7 +26,7 @@ from keras import backend as K
 import keras_retinanet.models
 
 
-def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_path=None, compare=False, online=True):
+def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_path=None, compare=False, online=True, fake=False):
     with open(json_path, 'r+') as file:
         # with open(os.path.join(os.path.dirname(json_path), 'system_retinanet_first.json'), 'r+') as file:
         structure = json.load(file)
@@ -128,7 +128,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
             print("GPU FPS: {}".format(batch / (time.time() - gpu_time)))
 
     def postprocess():
-        tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, pair = pair, threshold=0.2, compare=compare)
+        tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, pair = pair, threshold=0.2, compare=compare, fake= fake)
 
         total_time = time.time()
         while not e_stop.isSet():
@@ -140,7 +140,11 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
                 break
             # post_time = time.time()
             for i in range(len(frames)):
-                boxes = np.concatenate([y_pred[1][i, :, None], y_pred[0][i, :, :], y_pred[3][i, :, :]], 1)
+                if not fake:
+                    boxes = np.concatenate([y_pred[1][i, :, None], y_pred[0][i, :, :], y_pred[3][i, :, :]], 1)
+                else:
+                    boxes = np.concatenate([y_pred[1][i, :, None], y_pred[0][i, :, :]], 1)
+
                 image_b = tracker.process(boxes, frames[i])
                 if out_path is not None:
                     out.write(image_b)
@@ -164,7 +168,10 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
                 writer.write()
                 break
             for i in range(y_pred[0].shape[0]):
-                boxes = np.concatenate([y_pred[1][i, :, None], y_pred[0][i, :, :], y_pred[3][i, :, :]], 1)
+                if (len(y_pred) >= 4):
+                    boxes = np.concatenate([y_pred[1][i, :, None], y_pred[0][i, :, :], y_pred[3][i, :, :]], 1)
+                else:
+                    boxes = np.concatenate([y_pred[1][i, :, None], y_pred[0][i, :, :]], 1)
                 writer.process(boxes)
                 frame_cnt += 1
             # print("Total FPS: {}".format(batch / (time.time() - total_time)))
@@ -294,19 +301,24 @@ if __name__ == "__main__":
 
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     pair = '12'
-    name = '640_360_{}_3'.format(pair)
+    name = '640_360_no_centers_{}_0'.format(pair)
 
-    # model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_640_360_12_1_valreg.h5',
+    # model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_640_360_23_1_valreg.h5',
     #                                           backbone_name='resnet50', convert=False)
 
-    model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}_val.h5'.format(name, name),
+    # model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_640_360_no_centers_23_0_at30.h5',
+    #                                           backbone_name='resnet50', convert=False)
+
+    model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}_at20.h5'.format(name, name),
                                               backbone_name='resnet50', convert=False)
+
+    name = '640_360_no_centers_{}_0_at20'.format(pair)
 
     print(model.summary)
     model._make_predict_function()
-    #
+
     for vid, calib in zip(vid_list, calib_list):
-        test_video(model, vid, calib, 640, 360, 25, name, pair, online = False) # out_path='D:/Skola/PhD/code/keras-retinanet/video_results/left_5.avi')
+        test_video(model, vid, calib, 640, 360, 16, name, pair, online = False, fake = True) # out_path='D:/Skola/PhD/code/keras-retinanet/video_results/left_5.avi')
 
     thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     # thresholds = [0.10, 0.12, 0.14, 0.16, 0.18, 0.20, 0.22, 0.24, 0.26, 0.28, 0.30]
@@ -314,7 +326,7 @@ if __name__ == "__main__":
 
     for calib, vid in zip(calib_list, vid_list):
         for threshold in thresholds:
-            track_detections(calib, vid, pair, 640, 360, name, threshold, fake = False)
+            track_detections(calib, vid, pair, 640, 360, name, threshold, fake = True)
 
 
     # name = '640_360_late'
