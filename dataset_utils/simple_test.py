@@ -109,8 +109,8 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, out_path=N
                 if out_path is not None:
                     out.write(image_b)
                 cv2.imshow('frame', image_b)
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    e_stop.set()
+                # if cv2.waitKey(1) & 0xFF == ord('q'):
+                #     e_stop.set()
             # break
             # print("Post FPS: {}".format(batch / (time.time() - post_time)))
             # print("Total FPS: {}".format(batch / (time.time() - total_time)))
@@ -153,7 +153,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, out_path=N
 
     if out_path is not None:
         out.release()
-    cv2.destroyAllWindows()
+    # cv2.destroyAllWindows()
 
 
 def track_detections(json_path, im_w, im_h, name, threshold):
@@ -162,37 +162,39 @@ def track_detections(json_path, im_w, im_h, name, threshold):
 
 if __name__ == "__main__":
 
-    vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
-    results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
+    # vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
+    # results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
 
-    # vid_path = '/home/kocur/data/2016-ITS-BrnoCompSpeed/dataset/'
-    # results_path = '/home/kocur/data/2016-ITS-BrnoCompSpeed/results/'
+    vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
+    results_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/results/'
 
     vid_list = []
     calib_list = []
-    for i in range(6, 7):
-        # dir_list = ['session{}_center'.format(i), 'session{}_left'.format(i), 'session{}_right'.format(i)]
+    for i in range(4, 7):
+        dir_list = ['session{}_center'.format(i), 'session{}_left'.format(i), 'session{}_right'.format(i)]
         # dir_list = ['session{}_left'.format(i), 'session{}_right'.format(i)]
-        dir_list = ['session{}_left'.format(i)]
+        # dir_list = ['session{}_left'.format(i)]
         vid_list.extend([os.path.join(vid_path, d) for d in dir_list])
         calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list])
 
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+    name = '640_360_ablation_0'
 
-    model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_ablation_640_360.h5',
-                                              backbone_name='resnet50', convert=False)
-
-    # model = keras_retinanet.models.load_model('/home/kocur/code/keras-retinanet/models/resnet50_ablation_640_360.h5',
+    # model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_ablation_640_360.h5',
     #                                           backbone_name='resnet50', convert=False)
+
+    model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}_at30.h5'.format(name, name),
+                                              backbone_name='resnet50', convert=False)
 
     print(model.summary)
     model._make_predict_function()
 
-    name = 'ablation_640_360'
+    name = 'ablation_640_360_0_at30'
 
     for vid, calib in zip(vid_list, calib_list):
-        test_video(model, vid, calib, 640, 360, 16, name, online=True)
+        test_video(model, vid, calib, 640, 360, 16, name, online=False)
 
-    thresholds = [0.1, 0.2, 0.3, 0.4, 0.6, 0.8]
+    thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     # # thresholds = [0.1]
     #
     for calib in calib_list:

@@ -3,7 +3,7 @@ import json
 import cv2
 import numpy as np
 
-from dataset_utils.warper import get_transform_matrix
+from dataset_utils.warper import get_transform_matrix, get_transform_matrix_with_criterion
 from dataset_utils.geometry import line, intersection, computeCameraCalibration
 
 
@@ -112,33 +112,40 @@ def generate_image():
 
 def generate_image():
 
-    json_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/session5_left/system_SochorCVIU_Edgelets_BBScale_Reg.json'
+    session = 'session5_left'
 
+    json_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/{}/system_SochorCVIU_Edgelets_BBScale_Reg.json'.format(session)
+
+    mask = cv2.imread('D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset/{}/video_mask.png'.format(session), 0)
 
     with open(json_path, 'r+') as file:
         structure = json.load(file)
         camera_calibration = structure['camera_calibration']
 
-    vp0, vp1, vp2, _, _, _ = computeCameraCalibration(camera_calibration["vp1"], camera_calibration["vp2"],
+    vp1, vp2, vp3, _, _, _ = computeCameraCalibration(camera_calibration["vp1"], camera_calibration["vp2"],
                                                       camera_calibration["pp"])
-    vp0 = vp0[:-1] / vp0[-1]
     vp1 = vp1[:-1] / vp1[-1]
     vp2 = vp2[:-1] / vp2[-1]
+    vp3 = vp3[:-1] / vp3[-1]
+
+    print('VP1: {}, VP2: {}, VP3: {}'.format(vp1, vp2, vp3))
 
     frame = np.zeros([1080, 1920])
     pts = [[100, 200], [1440, 200], [1440, 1080], [100, 1080]]
     # pts = None
-    M, IM = get_transform_matrix(vp1, vp2, frame, 640, 360, pts=pts)
+    M, IM = get_transform_matrix_with_criterion(vp3, vp2, mask, 1000, 1000, constraint = 0)
 
-    M2, IM2 = get_transform_matrix(vp1, vp2, frame, 640, 360)
+    M2, IM2 = get_transform_matrix_with_criterion(vp1, vp2, mask, 1000, 1000, constraint = 0)
 
-    image = cv2.imread('D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset/session5_left/screen.png')
+    image = cv2.imread('D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset/{}/screen.png'.format(session))
 
-    t_image1 = cv2.warpPerspective(image, M, (640,360))
-    t_image2 = cv2.warpPerspective(image, M2, (640,360))
+    t_image1 = cv2.warpPerspective(image, M, (1000,1000))
+    t_image2 = cv2.warpPerspective(image, M2, (1000,1000))
 
-    cv2.imwrite('cut.png', t_image1)
-    cv2.imwrite('no-cut.png', t_image2)
+
+
+    cv2.imwrite('image1.png', t_image1)
+    cv2.imwrite('imag2.png', t_image2)
 
 if __name__ == "__main__":
     generate_image()

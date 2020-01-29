@@ -9,6 +9,7 @@ import sys
 import numpy as np
 
 sys.path[0:0] = [os.path.join(sys.path[0], '../../Mask_RCNN')]
+print(sys.path)
 # sys.path[0:0] = ['/home/kocur/code/Mask_RCNN']
 # sys.path[0:0] = ['/home/k/kocur15/code/Mask_RCNN']
 
@@ -118,11 +119,11 @@ class BCS_boxer(object):
         # y_min = roi[0]/(1080/self.im_h)
         # y_max = roi[2]/(1080/self.im_h)
 
-        ret = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        _, contours, _ = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
         if len(ret[1]) == 0:
             return None
-        cnt = ret[1][0]
+        cnt = contours[0]
         x_min, y_min, w, h = cv2.boundingRect(cnt)
         x_max = x_min + w
         y_max = y_min + h
@@ -300,11 +301,11 @@ if __name__ == '__main__':
     # ds_path = 'D:/Skola/PhD/data/BCS_boxed/'
     # results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
 
-    pair = '23'
+    pair = '12'
 
     vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
     results_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/results/'
-    ds_path = '/home/k/kocur15/data/BCS_boxed/'
+    ds_path = '/home/k/kocur15/data/BCS_boxed_rot/'
 
     vid_lists = []
     calib_lists = []
@@ -326,5 +327,5 @@ if __name__ == '__main__':
     # vid_list = [os.path.join(vid_path, d, 'video.avi') for d in dir_list]
 
     for i in range(4):
-        boxer = BCS_boxer(model, vid_lists[i], calib_lists[i], pkl_paths[i], image_paths[i], 960, 540, save_often=True, n = 25)
+        boxer = BCS_boxer(model, vid_lists[i], calib_lists[i], pkl_paths[i], image_paths[i], 540, 960, save_often = True, n = 25)
         boxer.process()

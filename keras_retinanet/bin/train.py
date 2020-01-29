@@ -246,9 +246,14 @@ def create_generators(args, preprocess_image):
         # Box_images = 'C:/datasets/BoxCars116k/images_warped'
         # Box_dataset = 'C:/datasets/BoxCars116k/dataset_warped.pkl'
 
-        BCS_path = '/home/k/kocur15/data/BCS_boxed{}/'
-        Box_images = '/home/k/kocur15/data/BoxCars116k/images_warped{}/'
-        Box_dataset = '/home/k/kocur15/data/BoxCars116k/dataset_warped{}.pkl'
+        if args.rot:
+            BCS_path = '/home/k/kocur15/data/BCS_boxed_rot{}/'
+            Box_images = '/home/k/kocur15/data/BoxCars116k/images_warped_rot{}/'
+            Box_dataset = '/home/k/kocur15/data/BoxCars116k/dataset_warped_rot{}.pkl'
+        else:
+            BCS_path = '/home/k/kocur15/data/BCS_boxed{}/'
+            Box_images = '/home/k/kocur15/data/BoxCars116k/images_warped{}/'
+            Box_dataset = '/home/k/kocur15/data/BoxCars116k/dataset_warped{}.pkl'
 
         if args.pair == '12':
             pairs = ['12']
@@ -298,9 +303,14 @@ def create_generators(args, preprocess_image):
         # Box_images = 'C:/datasets/BoxCars116k/images_warped'
         # Box_dataset = 'C:/datasets/BoxCars116k/dataset_warped.pkl'
 
-        BCS_path = '/home/k/kocur15/data/BCS_boxed{}/'
-        Box_images = '/home/k/kocur15/data/BoxCars116k/images_warped{}/'
-        Box_dataset = '/home/k/kocur15/data/BoxCars116k/dataset_warped{}.pkl'
+        if args.rot:
+            BCS_path = '/home/k/kocur15/data/BCS_boxed_rot{}/'
+            Box_images = '/home/k/kocur15/data/BoxCars116k/images_warped_rot{}/'
+            Box_dataset = '/home/k/kocur15/data/BoxCars116k/dataset_warped_rot{}.pkl'
+        else:
+            BCS_path = '/home/k/kocur15/data/BCS_boxed{}/'
+            Box_images = '/home/k/kocur15/data/BoxCars116k/images_warped{}/'
+            Box_dataset = '/home/k/kocur15/data/BoxCars116k/dataset_warped{}.pkl'
 
         if args.pair == '12':
             pairs = ['12']
@@ -557,6 +567,7 @@ def parse_args(args):
     parser.add_argument('--no-centers',      help='Set centers to 0 on training.', action='store_true')
     parser.add_argument('--ablation',        help='Ablation training.', action='store_true')
     parser.add_argument('--pair',            help='Select pair from 12, 23 or both', default='23')
+    parser.add_argument('--rot',             help='Use flipped image dimensions', action='store_true')
 
     return check_args(parser.parse_args(args))
 

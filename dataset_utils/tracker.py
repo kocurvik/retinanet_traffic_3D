@@ -20,7 +20,7 @@ font = cv2.FONT_HERSHEY_SIMPLEX
 
 
 class Tracker:
-    def __init__(self, json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, threshold = 0.7, pair='23', keep=5, compare = False, fake = False, write_name = None):
+    def __init__(self, json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, threshold = 0.7, pair='23', keep=5, compare = False, fake = False, write_name = None, save_often = True):
         self.tracks = []
         self.assigned = []
         self.last_id = 0
@@ -45,6 +45,7 @@ class Tracker:
         self.pair = pair
         self.keep = keep
         self.frame = 0
+        self.save_often = save_often
         if write_name is None:
             self.write_name = self.name
         else:
@@ -200,7 +201,7 @@ class Tracker:
     def process(self, boxes, image):
         image_b = copy(image)
         self.frame += 1
-        if self.frame % 1000 == 0:
+        if self.frame % 1000 == 0 and self.save_often:
             self.write()
 
 

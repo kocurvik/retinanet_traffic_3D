@@ -129,7 +129,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
 
     def postprocess():
         tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, pair = pair, threshold=0.2, compare=compare, fake= fake)
-
+        counter = 0
         total_time = time.time()
         while not e_stop.isSet():
             try:
@@ -149,8 +149,9 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
                 if out_path is not None:
                     out.write(image_b)
                 cv2.imshow('frame', image_b)
-                # cv2.imwrite('frame_c0_{}.png'.format(i),image_b)
-                if cv2.waitKey(0) & 0xFF == ord('q'):
+                counter += 1
+                cv2.imwrite('frames/frame_{}_{}_{}.png'.format(vid_name, name, counter),image_b)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
                     e_stop.set()
             # break
             # print("Post FPS: {}".format(batch / (time.time() - post_time)))
@@ -301,24 +302,24 @@ if __name__ == "__main__":
 
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     pair = '12'
-    name = '640_360_no_centers_{}_0'.format(pair)
+    name = '360_640_no_centers_{}_0'.format(pair)
 
     # model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_640_360_23_1_valreg.h5',
     #                                           backbone_name='resnet50', convert=False)
 
-    # model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_640_360_no_centers_23_0_at30.h5',
+    # model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_{}_at30.h5'.format(name),
     #                                           backbone_name='resnet50', convert=False)
 
-    model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}_at20.h5'.format(name, name),
+    model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}_at30.h5'.format(name, name),
                                               backbone_name='resnet50', convert=False)
 
-    name = '640_360_no_centers_{}_0_at20'.format(pair)
+    name = '360_640_no_centers_{}_0_at30'.format(pair)
 
     print(model.summary)
     model._make_predict_function()
 
     for vid, calib in zip(vid_list, calib_list):
-        test_video(model, vid, calib, 640, 360, 16, name, pair, online = False, fake = True) # out_path='D:/Skola/PhD/code/keras-retinanet/video_results/left_5.avi')
+        test_video(model, vid, calib, 360, 640, 16, name, pair, online = False, fake = True) # out_path='D:/Skola/PhD/code/keras-retinanet/video_results/left_5.avi')
 
     thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     # thresholds = [0.10, 0.12, 0.14, 0.16, 0.18, 0.20, 0.22, 0.24, 0.26, 0.28, 0.30]
@@ -326,7 +327,7 @@ if __name__ == "__main__":
 
     for calib, vid in zip(calib_list, vid_list):
         for threshold in thresholds:
-            track_detections(calib, vid, pair, 640, 360, name, threshold, fake = True)
+            track_detections(calib, vid, pair, 360, 640, name, threshold, fake = True)
 
 
     # name = '640_360_late'

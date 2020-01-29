@@ -10,6 +10,24 @@ def distance(p1, p2, p3):
 def is_right(l1,l2,p):
     return ((p[0] - l1[0])*(l2[1]-l1[1]) - (p[1] - l1[1])*(l2[0]-l1[0])) < 0
 
+def isLeft(A, B, P):
+    ret = (P[0] - A[0]) * (B[1] - A[1]) - (P[1] - A[1]) * (B[0] - A[0])
+    return ret < 0
+
+def tangent_point_poly(p, V, im_h):
+    left_idx = 0
+    right_idx = 0
+    p = [np.float64(x) for x in p]
+    n = len(V)
+    for i in range(1, n):
+        if isLeft(p, V[left_idx], V[i]):
+            left_idx = i
+        if not isLeft(p, V[right_idx], V[i]):
+            right_idx = i
+    if p[1] > im_h:
+        return V[left_idx], V[right_idx]
+    return V[right_idx], V[left_idx]
+
 
 def line(p1, p2):
     A = (p1[1] - p2[1])
