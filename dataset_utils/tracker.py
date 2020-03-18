@@ -234,6 +234,7 @@ class Tracker:
                 bb_t.append(list(intersection(line([xmax, cy], self.vp1_t), line([xmin, ymax], [xmax, ymax]))))
                 bb_t.append([xmin, ymax])
             else:
+                cx, cy = intersection(line([xmax, ymax], self.vp1_t), line([0, cy_0], [1, cy_0]))
                 bb_t.append([xmax, ymax])
                 bb_t.append(list(intersection(line([xmin, cy], self.vp1_t), line([xmin, ymax], [xmax, ymax]))))
 
