@@ -145,10 +145,50 @@ def generate_image():
 
 
     cv2.imwrite('image1.png', t_image1)
-    cv2.imwrite('imag2.png', t_image2)
+    cv2.imwrite('image2.png', t_image2)
+
+def generate_mask_image():
+    session = 'session4_left'
+
+    json_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/{}/system_SochorCVIU_Edgelets_BBScale_Reg.json'.format(session)
+
+    mask = cv2.imread('D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset/{}/video_mask.png'.format(session), 0)
+
+    with open(json_path, 'r+') as file:
+        structure = json.load(file)
+        camera_calibration = structure['camera_calibration']
+
+    vp1, vp2, vp3, _, _, _ = computeCameraCalibration(camera_calibration["vp1"], camera_calibration["vp2"],
+                                                      camera_calibration["pp"])
+    vp1 = vp1[:-1] / vp1[-1]
+    vp2 = vp2[:-1] / vp2[-1]
+    vp3 = vp3[:-1] / vp3[-1]
+
+    print('VP1: {}, VP2: {}, VP3: {}'.format(vp1, vp2, vp3))
+
+    M, IM = get_transform_matrix_with_criterion(vp3, vp2, mask, 1000, 1000, constraint = 0)
+
+    M2, IM2 = get_transform_matrix_with_criterion(vp1, vp2, mask, 1000, 1000, constraint = 0)
+
+    image = cv2.imread('vehicle.png')
+
+    t_image1 = cv2.warpPerspective(image, M, (1920,1080))
+    t_image2 = cv2.warpPerspective(image, M2, (1920,1080))
+
+    vp1_t = np.array([vp1], dtype="float32")
+    vp1_t = np.array([vp1_t])
+    vp1_t = cv2.perspectiveTransform(vp1_t, M)
+    vp1_t = vp1_t[0][0]
+
+    print(vp1_t)
+
+
+    cv2.imwrite('image1.png', t_image1)
+    cv2.imwrite('image2.png', t_image2)
+
 
 if __name__ == "__main__":
-    generate_image()
+    generate_mask_image()
 
 
 

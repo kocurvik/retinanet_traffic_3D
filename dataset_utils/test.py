@@ -26,6 +26,29 @@ from keras import backend as K
 import keras_retinanet.models
 
 
+def draw_raw_output(images, y_pred):
+    for i, image in enumerate(images):
+        boxes = np.concatenate([y_pred[1][i, :, None], y_pred[0][i, :, :], y_pred[3][i, :, :]], 1)
+        for box in boxes:
+            xmin = box[1]
+            ymin = box[2]
+            xmax = box[3]
+            ymax = box[4]
+            cy_1 = (1 - box[-1]) * (ymax - ymin) + ymin
+            cy_0 = box[-1] * (ymax - ymin) + ymin
+
+            cv2.line(image, (int(xmin), int(ymin)), (int(xmin), int(ymax)), (0, 0, 255), thickness=1)
+            cv2.line(image, (int(xmin), int(ymax)), (int(xmax), int(ymax)), (0, 0, 255), thickness=1)
+            cv2.line(image, (int(xmax), int(ymax)), (int(xmax), int(ymin)), (0, 0, 255), thickness=1)
+            cv2.line(image, (int(xmax), int(ymin)), (int(xmin), int(ymin)), (0, 0, 255), thickness=1)
+
+            cv2.line(image, (int(xmin), int(cy_0)), (int(xmax), int(cy_0)), (0, 255, 0), thickness=1)
+            cv2.line(image, (int(xmin), int(cy_1)), (int(xmax), int(cy_1)), (255, 0, 0), thickness=1)
+
+        cv2.imshow("Raw out", image)
+        cv2.waitKey(1)
+
+
 def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_path=None, compare=False, online=True, fake=False):
     with open(json_path, 'r+') as file:
         # with open(os.path.join(os.path.dirname(json_path), 'system_retinanet_first.json'), 'r+') as file:
@@ -61,7 +84,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
 
     if out_path is not None:
         fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
-        out = cv2.VideoWriter(out_path, fourcc, 25.0, (frame.shape[1], frame.shape[0]))
+        out = cv2.VideoWriter(out_path, fourcc, 50.0, (frame.shape[1], frame.shape[0]))
 
     q_frames = Queue(10)
     q_images = Queue(10)
@@ -126,9 +149,10 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
             y_pred = model.predict_on_batch(np.array(images))
             q_predict.put(y_pred)
             print("GPU FPS: {}".format(batch / (time.time() - gpu_time)))
+            # draw_raw_output(images, y_pred)
 
     def postprocess():
-        tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, pair = pair, threshold=0.2, compare=compare, fake= fake)
+        tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, pair = pair, threshold=0.5, compare=compare, fake= fake)
         counter = 0
         total_time = time.time()
         while not e_stop.isSet():
@@ -146,13 +170,19 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
                     boxes = np.concatenate([y_pred[1][i, :, None], y_pred[0][i, :, :]], 1)
 
                 image_b = tracker.process(boxes, frames[i])
+
                 if out_path is not None:
                     out.write(image_b)
                 cv2.imshow('frame', image_b)
                 counter += 1
-                cv2.imwrite('frames/frame_{}_{}_{}.png'.format(vid_name, name, counter),image_b)
+                # cv2.imwrite('frames/frame_{}_{}_{}.png'.format(vid_name, name, counter),image_b)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     e_stop.set()
+            print("Frame {} out of {} in 5 min vid".format(counter, 60 * 50 * 5))
+            if counter > 60 * 50 * 5:
+                e_stop.set()
+                out.release()
+
             # break
             # print("Post FPS: {}".format(batch / (time.time() - post_time)))
             # print("Total FPS: {}".format(batch / (time.time() - total_time)))
@@ -200,7 +230,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
         out.release()
 
 
-def track_detections(json_path, video_path, pair,  im_w, im_h, name, threshold, fake = False):
+def track_detections(json_path, video_path, pair,  im_w, im_h, name, threshold, fake = False, write_name = None):
     print('Tracking: {} for t = {}'.format(name,threshold))
 
     with open(json_path, 'r+') as file:
@@ -222,7 +252,7 @@ def track_detections(json_path, video_path, pair,  im_w, im_h, name, threshold, 
     elif pair == '23':
         M, IM = get_transform_matrix_with_criterion(vp3, vp2, mask, im_w, im_h)
 
-    tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, threshold=threshold, pair = pair, fake=fake)
+    tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, threshold=threshold, pair = pair, fake=fake, write_name=write_name)
     tracker.read()
 
 def test_dataset(images_path, ds_path, json_path, im_w, im_h):
@@ -280,15 +310,15 @@ def test_dataset(images_path, ds_path, json_path, im_w, im_h):
 
 if __name__ == "__main__":
 
-    # vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
-    # results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
+    vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
+    results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
 
-    vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
-    results_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/results/'
+    # vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
+    # results_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/results/'
 
     vid_list = []
     calib_list = []
-    for i in range(4, 7):
+    for i in range(6, 7):
         # if i == 5:
         #     dir_list = ['session{}_center'.format(i), 'session{}_right'.format(i)]
         # else:
@@ -300,37 +330,41 @@ if __name__ == "__main__":
         # calib_list.extend([os.path.join(results_path, d, 'system_dubska_optimal_calib.json') for d in dir_list])
         # calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_ManualCalib_ManualScale.json') for d in dir_list])
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+    # os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     pair = '12'
-    name = '360_640_no_centers_{}_0'.format(pair)
+    name = '360_640_{}_0'.format(pair)
 
     # model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_640_360_23_1_valreg.h5',
     #                                           backbone_name='resnet50', convert=False)
 
-    # model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_{}_at30.h5'.format(name),
-    #                                           backbone_name='resnet50', convert=False)
-
-    model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}_at30.h5'.format(name, name),
+    model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_{}_at30.h5'.format(name),
                                               backbone_name='resnet50', convert=False)
 
-    name = '360_640_no_centers_{}_0_at30'.format(pair)
+    # model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}_at30.h5'.format(name, name),
+    #                                           backbone_name='resnet50', convert=False)
+
+    # name = '360_640_no_centers_{}_0_at30'.format(pair)
 
     print(model.summary)
     model._make_predict_function()
 
     for vid, calib in zip(vid_list, calib_list):
-        test_video(model, vid, calib, 360, 640, 16, name, pair, online = False, fake = True) # out_path='D:/Skola/PhD/code/keras-retinanet/video_results/left_5.avi')
+        test_video(model, vid, calib, 360, 640, 16, name, pair, online = True, fake = False, out_path='D:/Skola/PhD/code/keras-retinanet/video_results/center_6_fix.avi')
 
-    thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    # thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     # thresholds = [0.10, 0.12, 0.14, 0.16, 0.18, 0.20, 0.22, 0.24, 0.26, 0.28, 0.30]
     # thresholds = [0.2]
+    # thresholds = [0.5]
+    #
+    # name = '360_640_12_0_at30'
+    # write_name = '360_640_12_fix'
+    #
+    # for calib, vid in zip(calib_list, vid_list):
+    #     for threshold in thresholds:
+    #         track_detections(calib, vid, pair, 360, 640, name, threshold, fake = True, write_name= write_name)
 
-    for calib, vid in zip(calib_list, vid_list):
-        for threshold in thresholds:
-            track_detections(calib, vid, pair, 360, 640, name, threshold, fake = True)
 
 
-    # name = '640_360_late'
     #
     # for calib in calib_list:
     #     for threshold in thresholds:

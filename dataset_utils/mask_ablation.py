@@ -7,7 +7,13 @@ from threading import Thread, Event
 
 import tensorflow as tf
 
-sys.path[0:0] = [os.path.join(sys.path[0], '../../Mask_RCNN')]
+if os.name == 'nt':
+    COCO_MODEL_PATH = os.path.join('D:/Skola/PhD/code/Mask_RCNN_v2', "mask_rcnn_coco.h5")
+    sys.path[0:0] = [os.path.join(sys.path[0], '../../Mask_RCNN_v2')]
+else:
+    COCO_MODEL_PATH = os.path.join('/home/k/kocur15/code/Mask_RCNN', "mask_rcnn_coco.h5")
+    sys.path[0:0] = [os.path.join(sys.path[0], '../../Mask_RCNN')]
+
 print(sys.path)
 import coco as coco
 import cv2
@@ -21,11 +27,6 @@ from dataset_utils.warper import get_transform_matrix, get_transform_matrix_with
 from dataset_utils.geometry import line, intersection, computeCameraCalibration
 
 
-if os.name == 'nt':
-    COCO_MODEL_PATH = os.path.join('D:/Skola/PhD/code/Mask_RCNN', "mask_rcnn_coco.h5")
-else:
-    COCO_MODEL_PATH = os.path.join('/home/k/kocur15/code/Mask_RCNN', "mask_rcnn_coco.h5")
-
 ROOT_DIR = os.getcwd()
 MODEL_DIR = os.path.join(ROOT_DIR, "logs")
 IMAGE_DIR = os.path.join(ROOT_DIR, "images")
@@ -34,19 +35,19 @@ class InferenceConfig(coco.CocoConfig):
     # Set batch size to 1 since we'll be running inference on
     # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
     GPU_COUNT = 1
-    IMAGES_PER_GPU = 4
-    DETECTION_MIN_CONFIDENCE = 0.5
+    IMAGES_PER_GPU = 1
+    DETECTION_MIN_CONFIDENCE = 0.0
 
 
 def get_single_box_mask(image, M, vp, im_w, im_h):
     image = cv2.warpPerspective(np.array(200 * image), M, (im_w, im_h), borderMode=cv2.BORDER_CONSTANT)
     _, image = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY)
 
-    _, contours, _ = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    contours, _ = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    if len(contours) == 0:
+        return None
     cnt = contours[0]
 
-    if len(cnt) == 0:
-        return None
     x_min, y_min, w, h = cv2.boundingRect(cnt)
     x_max = x_min + w
     y_max = y_min + h
@@ -183,12 +184,14 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, out_path=N
             # read_time = time.time()
             images = []
             for _ in range(batch):
+                for _ in range(150):
+                    _ = cap.read()
                 ret, frame = cap.read()
                 if not ret:
                     cap.release()
                     continue
                 image = cv2.bitwise_and(frame, frame, mask=mask)
-                images.append(image)
+                images.append(image[:,:,::-1])
             # print("Read FPS: {}".format(batch / (time.time() - read_time)))
             q_images.put(images)
 
@@ -203,8 +206,11 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, out_path=N
             # cv2.imshow('t_frame', images[0])
             # if cv2.waitKey(1) & 0xFF == ord('q'):
             #     e_stop.set()
-            with graph.as_default():
-                y_pred = model.detect(images)
+            # with graph.as_default():
+            y_pred = model.detect(images, verbose=0)
+            # cv2.imshow("Images", images[0])
+            # cv2.waitKey(1)
+            print(y_pred)
             q_predict.put(y_pred)
             print("GPU FPS: {}".format(batch / (time.time() - gpu_time)))
 
@@ -245,8 +251,9 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, out_path=N
             except Empty:
                 writer.write()
                 break
-            for i in range(y_pred[0].shape[0]):
+            for i in range(len(y_pred)):
                 boxes = get_boxes_mask(y_pred[i], M, vp1_t, im_w, im_h)
+                print(boxes)
                 writer.process(boxes)
                 frame_cnt += 1
             # print("Total FPS: {}".format(batch / (time.time() - total_time)))
@@ -301,48 +308,56 @@ if __name__ == '__main__':
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     config = InferenceConfig()
     config.display()
-    model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=config)
-    model.load_weights(COCO_MODEL_PATH, by_name=True)
 
-    vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
-    results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
+    # from tensorflow.python.framework.ops import disable_eager_execution
+    # disable_eager_execution()
 
-    # vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
-    # results_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/results/'
+    # model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=config)
+    # model.load_weights(COCO_MODEL_PATH, by_name=True)
+    if os.name == 'nt':
+        vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
+        results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
+    else:
+        vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
+        results_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/results/'
 
     vid_list = []
     calib_list = []
     for i in range(4, 7):
         # if i == 5:
-        #     dir_list = ['session{}_center'.format(i), 'session{}_right'.format(i)]
+        #     dir_list = ['session{}_left'.format(i), 'session{}_right'.format(i)]
+        # elif i == 6:
+        #     dir_list = ['session{}_right'.format(i)]
         # else:
+        #     dir_list = ['session{}_center'.format(i), 'session{}_left'.format(i), 'session{}_right'.format(i)]
+
         dir_list = ['session{}_center'.format(i), 'session{}_left'.format(i), 'session{}_right'.format(i)]
-        # dir_list = ['session{}_right'.format(i), 'session{}_left'.format(i),]
         # dir_list = ['session{}_left'.format(i)]
         vid_list.extend([os.path.join(vid_path, d) for d in dir_list])
         calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list])
+
         # calib_list.extend([os.path.join(results_path, d, 'system_dubska_optimal_calib.json') for d in dir_list])
         # calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_ManualCalib_ManualScale.json') for d in dir_list])
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+    # os.environ['CUDA_VISIBLE_DEVICES'] = '1'
     name = 'mask_ablation'
 
     config = InferenceConfig()
     config.display()
     model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=config)
     model.load_weights(COCO_MODEL_PATH, by_name=True)
-    global graph
-    graph = tf.get_default_graph()
+    # global graph
+    # graph = tf.get_default_graph()
 
     # model._make_predict_function()
 
     for vid, calib in zip(vid_list, calib_list):
-        test_video(model, vid, calib, 640, 360, 4, name, out_path=None, online = True)
+        test_video(model, vid, calib, 640, 360, 1, name, out_path=None, online = False)
 
-    thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    # thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     # thresholds = [0.10, 0.12, 0.14, 0.16, 0.18, 0.20, 0.22, 0.24, 0.26, 0.28, 0.30]
-    # thresholds = [0.2]
-
-    for calib, vid in zip(calib_list, vid_list):
-        for threshold in thresholds:
-            track_detections(calib, vid, 360, 640, name, threshold)
+    # thresholds = [0.5]
+    #
+    # for calib, vid in zip(calib_list, vid_list):
+    #     for threshold in thresholds:
+    #         track_detections(calib, vid, 640, 360, name, threshold)

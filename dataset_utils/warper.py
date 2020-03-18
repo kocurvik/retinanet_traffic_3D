@@ -106,7 +106,7 @@ def find_cornerpts(VP, pts):
 
 def get_pts_from_mask(mask, vp1, vp2):
     _, mask = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
-    _, countours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    countours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     hull = cv2.convexHull(countours[0])
     pts = hull[:,0,:]
     idx1, idx2 = find_cornerpts(vp1, pts)

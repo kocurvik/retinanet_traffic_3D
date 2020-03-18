@@ -38,6 +38,8 @@ class Tracker:
             self.vp3 = vp1
             self.vp1_t = warp_point(vp3, M)
 
+        print("VP1_T:{}".format(self.vp1_t))
+
         self.im_h = im_h
         self.im_w = im_w
         self.name = name
@@ -75,74 +77,105 @@ class Tracker:
 
         bb_t = []
 
-        if (self.vp1_t[1] < ymin and self.vp1_t[0] < xmin) or (ymax < self.vp1_t[1] and xmax < self.vp1_t[0]):
-            cx, cy = intersection(line([xmin, ymin], self.vp1_t), line([0, cy_0], [1, cy_0]))
-            bb_t.append([cx, cy])
-            bb_t.append([xmax, cy])
-            bb_t.append([xmax, ymax])
-            bb_t.append([cx, ymax])
-            bb_t.append([xmin, ymin])
+        if (self.vp1_t[1] < ymin):
+            if (xmin < self.vp1_t[0]) and (self.vp1_t[0] < xmax):
+                cy = cy_0
+                cx = xmin
+                bb_t.append([cx, cy])
+                bb_t.append([xmax, cy])
+                bb_t.append([xmax, ymax])
+                bb_t.append([cx, ymax])
+                tx, ty = intersection(line([cx, cy], self.vp1_t), line([xmin, ymin], [xmin + 1, ymin]))
+                bb_t.append([tx, ymin])
+                bb_t_array = np.array([[point] for point in bb_t], np.float32)
+                bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
+                bb_tt = [point[0] for point in bb_tt]
+                bb_tt.append(intersection(line(bb_tt[1], self.vp1), line(bb_tt[4], self.vp2)))
+                bb_tt.append(intersection(line(bb_tt[2], self.vp1), line(bb_tt[5], self.vp3)))
+                bb_tt.append(intersection(line(bb_tt[3], self.vp1), line(bb_tt[6], self.vp2)))
 
-            bb_t_array = np.array([[point] for point in bb_t], np.float32)
-            bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
-            bb_tt = [point[0] for point in bb_tt]
-            center = (bb_tt[3] + bb_tt[2])/2
+            elif self.vp1_t[0] < xmin:
+                cx, cy = intersection(line([xmin, ymin], self.vp1_t), line([0, cy_0], [1, cy_0]))
+                bb_t.append([cx, cy])
+                bb_t.append([xmax, cy])
+                bb_t.append([xmax, ymax])
+                bb_t.append([cx, ymax])
+                bb_t.append([xmin, ymin])
 
-            bb_tt.append(intersection(line(bb_tt[1], self.vp1), line(bb_tt[4], self.vp2)))
-            bb_tt.append(intersection(line(bb_tt[2], self.vp1), line(bb_tt[5], self.vp3)))
-            bb_tt.append(intersection(line(bb_tt[3], self.vp1), line(bb_tt[6], self.vp2)))
+                bb_t_array = np.array([[point] for point in bb_t], np.float32)
+                bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
+                bb_tt = [point[0] for point in bb_tt]
+                center = (bb_tt[3] + bb_tt[2]) / 2
 
-        elif (self.vp1_t[1] < ymin and xmax < self.vp1_t[0]) or (ymax < self.vp1_t[1] and self.vp1_t[0] < xmin):
-            cx, cy = intersection(line([xmax, ymin], self.vp1_t), line([0, cy_0], [1, cy_0]))
-            bb_t.append([cx, cy])
-            bb_t.append([cx, ymax])
-            bb_t.append([xmin, ymax])
-            bb_t.append([xmin, cy])
-            bb_t.append([xmax, ymin])
+                bb_tt.append(intersection(line(bb_tt[1], self.vp1), line(bb_tt[4], self.vp2)))
+                bb_tt.append(intersection(line(bb_tt[2], self.vp1), line(bb_tt[5], self.vp3)))
+                bb_tt.append(intersection(line(bb_tt[3], self.vp1), line(bb_tt[6], self.vp2)))
+            else: # vp1_t[0] > xmax
+                cx, cy = intersection(line([xmax, ymin], self.vp1_t), line([0, cy_0], [1, cy_0]))
+                bb_t.append([cx, cy])
+                bb_t.append([cx, ymax])
+                bb_t.append([xmin, ymax])
+                bb_t.append([xmin, cy])
+                bb_t.append([xmax, ymin])
 
-            bb_t_array = np.array([[point] for point in bb_t], np.float32)
-            bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
-            bb_tt = [point[0] for point in bb_tt]
-            center = (bb_tt[1] + bb_tt[2])/2
+                bb_t_array = np.array([[point] for point in bb_t], np.float32)
+                bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
+                bb_tt = [point[0] for point in bb_tt]
+                center = (bb_tt[1] + bb_tt[2]) / 2
 
-            bb_tt.append(intersection(line(bb_tt[1], self.vp1), line(bb_tt[4], self.vp3)))
-            bb_tt.append(intersection(line(bb_tt[2], self.vp1), line(bb_tt[5], self.vp2)))
-            bb_tt.append(intersection(line(bb_tt[3], self.vp1), line(bb_tt[6], self.vp3)))
-        elif self.vp1_t[1] < ymin:
-            cy = cy_0
-            cx = xmin
-            bb_t.append([cx, cy])
-            bb_t.append([xmax, cy])
-            bb_t.append([xmax, ymax])
-            bb_t.append([cx, ymax])
-            tx, ty = intersection(line([cx,cy], self.vp1_t), line([xmin, ymin], [xmin + 1, ymin]))
-            bb_t.append([tx, ymin])
-            bb_t_array = np.array([[point] for point in bb_t], np.float32)
-            bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
-            bb_tt = [point[0] for point in bb_tt]
-            center = (bb_tt[2] + bb_tt[3])/2
-
-            bb_tt.append(intersection(line(bb_tt[1], self.vp1), line(bb_tt[4], self.vp2)))
-            bb_tt.append(intersection(line(bb_tt[2], self.vp1), line(bb_tt[5], self.vp3)))
-            bb_tt.append(intersection(line(bb_tt[3], self.vp1), line(bb_tt[6], self.vp2)))
+                bb_tt.append(intersection(line(bb_tt[1], self.vp1), line(bb_tt[4], self.vp3)))
+                bb_tt.append(intersection(line(bb_tt[2], self.vp1), line(bb_tt[5], self.vp2)))
+                bb_tt.append(intersection(line(bb_tt[3], self.vp1), line(bb_tt[6], self.vp3)))
         else:
-            cy = cy_0
-            bb_t.append([xmin, cy])
-            bb_t.append([xmax, cy])
-            bb_t.append(intersection(line(self.vp1_t, [xmax, cy]), line([0, ymax], [1, ymax])))
-            bb_t.append(intersection(line(self.vp1_t, [xmin, cy]), line([0, ymax], [1, ymax])))
-            bb_t.append([xmin, ymin])
-            bb_t_array = np.array([[point] for point in bb_t], np.float32)
-            bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
-            bb_tt = [point[0] for point in bb_tt]
-            center = (bb_tt[2] + bb_tt[3])/2
+            if (xmin < self.vp1_t[0]) and (self.vp1_t[0] < xmax):
+                cy = cy_0
+                bb_t.append([xmin, cy])
+                bb_t.append([xmax, cy])
+                bb_t.append(intersection(line(self.vp1_t, [xmax, cy]), line([0, ymax], [1, ymax])))
+                bb_t.append(intersection(line(self.vp1_t, [xmin, cy]), line([0, ymax], [1, ymax])))
+                bb_t.append([xmin, ymin])
+                bb_t_array = np.array([[point] for point in bb_t], np.float32)
+                bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
+                bb_tt = [point[0] for point in bb_tt]
+                center = (bb_tt[2] + bb_tt[3]) / 2
 
-            bb_tt.append(intersection(line(bb_tt[1], self.vp3), line(bb_tt[4], self.vp2)))
-            bb_tt.append(intersection(line(bb_tt[2], self.vp3), line(bb_tt[5], self.vp1)))
-            bb_tt.append(intersection(line(bb_tt[3], self.vp3), line(bb_tt[4], self.vp1)))
-            # print("Case at frame:{}".format(self.frame))
+                bb_tt.append(intersection(line(bb_tt[1], self.vp3), line(bb_tt[4], self.vp2)))
+                bb_tt.append(intersection(line(bb_tt[2], self.vp3), line(bb_tt[5], self.vp1)))
+                bb_tt.append(intersection(line(bb_tt[3], self.vp3), line(bb_tt[4], self.vp1)))
 
+            elif self.vp1_t[0] < xmin:
+                cx, cy = intersection(line([xmin, ymax], self.vp1_t), line([0, cy_0], [1, cy_0]))
+                bb_t.append([cx, cy])
+                bb_t.append([xmax, cy])
+                bb_t.append(list(intersection(line([xmax, cy], self.vp1_t), line([xmin, ymax], [xmax, ymax]))))
+                bb_t.append([xmin, ymax])
 
+                bb_t.append([cx, ymin])
+                bb_t.append([xmax, ymin])
+                bb_t.append(list(intersection(line(bb_t[2], [bb_t[2][0], bb_t[2][1] + 1]), line(self.vp1_t, [xmax, ymin]))))
+                bb_t.append(list(intersection(line(bb_t[6], [bb_t[6][0] + 1, bb_t[6][1]]), line([xmin, 0], [xmin, 1]))))
+
+                bb_t_array = np.array([[point] for point in bb_t], np.float32)
+                bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
+                bb_tt = [point[0] for point in bb_tt]
+                center = (bb_tt[3] + bb_tt[2])/2
+            else:
+                cx, cy = intersection(line([xmax, ymax], self.vp1_t), line([0, cy_0], [1, cy_0]))
+
+                bb_t.append([xmin, cy])
+                bb_t.append([cx, cy])
+                bb_t.append([xmax, ymax])
+                bb_t.append(list(intersection(line([xmin, cy], self.vp1_t), line([xmin, ymax], [xmax, ymax]))))
+
+                bb_t.append([xmin, ymin])
+                bb_t.append([cx, ymin])
+                bb_t.append(list(intersection(line([xmax, ymin], [xmax, ymax]), line(self.vp1_t, bb_t[5]))))
+                bb_t.append(list(intersection(line(bb_t[6], [bb_t[6][0] + 1, bb_t[6][1]]), line(self.vp1_t, bb_t[4]))))
+
+                bb_t_array = np.array([[point] for point in bb_t], np.float32)
+                bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
+                bb_tt = [point[0] for point in bb_tt]
+                center = (bb_tt[2] + bb_tt[3]) / 2
 
         bb_tt = [tuple(point) for point in bb_tt]
 
