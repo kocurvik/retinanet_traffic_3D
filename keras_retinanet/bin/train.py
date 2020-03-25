@@ -266,12 +266,12 @@ def create_generators(args, preprocess_image):
 
 
         def split_exclusion_fn_train(filename):
-            if int(filename.split("_")[-1].split(".")[0]) < 30000:
+            if int(filename.split("_")[-1].split(".")[0]) < 30000 // 25:
                 return True
             return False
 
         def split_exclusion_fn_val(filename):
-            if int(filename.split("_")[-1].split(".")[0]) >= 30000:
+            if int(filename.split("_")[-1].split(".")[0]) >= 30000 // 25:
                 return True
             return False
 

@@ -57,7 +57,7 @@ class InferenceConfig(coco.CocoConfig):
     # Set batch size to 1 since we'll be running inference on
     # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
     GPU_COUNT = 1
-    IMAGES_PER_GPU = 1
+    IMAGES_PER_GPU = 8
     DETECTION_MIN_CONFIDENCE = 0.5
 
 class BCS_boxer(object):
@@ -119,9 +119,9 @@ class BCS_boxer(object):
         # y_min = roi[0]/(1080/self.im_h)
         # y_max = roi[2]/(1080/self.im_h)
 
-        _, contours, _ = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        contours, _ = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
-        if len(ret[1]) == 0:
+        if len(contours) == 0:
             return None
         cnt = contours[0]
         x_min, y_min, w, h = cv2.boundingRect(cnt)
@@ -170,14 +170,16 @@ class BCS_boxer(object):
             cy1 = intersection(line([x_max, y_min], [x_max, y_max]), line(vp0_t, rt))
             cy2 = intersection(line([x_min, y_min], [x_min, y_max]), line(vp0_t, lt))
 
-        image = cv2.circle(image,tuple(cy1),2,(0,255,0))
-        image = cv2.circle(image,tuple(cy2),2,(0,0,255))
+        image = cv2.circle(image, tuple(cy1),2,(0,255,0))
+        image = cv2.circle(image, tuple(cy2),2,(0,0,255))
 
         # cv2.imshow("Detects", image)
         # cv2.waitKey(0)
 
-        cy = min(cy1[1], cy2[1])
-
+        if vp0_t[1] < 0:
+            cy = min(cy1[1], cy2[1])
+        else:
+            cy = max(cy1[1], cy2[1])
 
         centery = (cy - y_min) / (y_max - y_min)
 
@@ -223,8 +225,6 @@ class BCS_boxer(object):
 
         ret, frame = cap.read()
 
-
-
         if pair == '12':
             M, IM = get_transform_matrix_with_criterion(vp1, vp2, mask, self.im_w, self.im_h)
             vp0_t = np.array([vp3], dtype="float32")
@@ -240,47 +240,52 @@ class BCS_boxer(object):
         vp0_t = vp0_t[0][0]
 
         while ret:
-            if self.n != 0:
-                if self.pos % self.n != 0:
-                    self.pos += 1
+            frames = []
+            t_images = []
+            for _ in range(8):
+                for _ in range(self.n):
+                    # self.pos += 1
                     ret, frame = cap.read()
-                    continue
+                    if not ret:
+                        break
+                if not ret:
+                    break
 
-            boxes = []
-            # Capture frame-by-frame
-            frame = cv2.bitwise_and(frame, frame, mask=mask)
-            t_image = cv2.warpPerspective(frame, M, (self.im_w, self.im_h), borderMode=cv2.BORDER_CONSTANT)
+                frame = cv2.bitwise_and(frame, frame, mask=mask)
+                t_image = cv2.warpPerspective(frame, M, (self.im_w, self.im_h), borderMode=cv2.BORDER_CONSTANT)
+                frames.append(frame)
+                t_images.append(t_image)
+            if not ret:
+                break
 
             # cv2.imshow('Original', frame)
             # cv2.imshow('Warped',t_image)
             # cv2.waitKey(0)
 
-            results = self.model.detect([frame])
-            r = results[0]
+            results = self.model.detect(frames)
 
-            for idx in range(len(r['class_ids'])):
-                if r['class_ids'][idx] in self.vehicles:
-                    box = self.blob_boxer(r['masks'][:, :, idx], r['rois'][idx], vp0_t, M)
-                    if box is not None:
-                        boxes.append(box)
+            for r, t_image in zip(results, t_images):
+                boxes = []
+                for idx in range(len(r['class_ids'])):
+                    if r['class_ids'][idx] in self.vehicles:
+                        box = self.blob_boxer(r['masks'][:, :, idx], r['rois'][idx], vp0_t, M)
+                        if box is not None:
+                            boxes.append(box)
 
-            entry = {'id': self.id(), 'filename': self.filename(), 'labels': boxes}
+                entry = {'id': self.id(), 'filename': self.filename(), 'labels': boxes}
+                self.entries.append(entry)
 
-            self.entries.append(entry)
+                targetpath = os.path.join(self.images_path, entry['filename'])
+                if not os.path.exists(os.path.dirname(targetpath)):
+                    os.makedirs(os.path.dirname(targetpath))
+                cv2.imwrite(targetpath, t_image)
 
-            targetpath = os.path.join(self.images_path, entry['filename'])
-            if not os.path.exists(os.path.dirname(targetpath)):
-                os.makedirs(os.path.dirname(targetpath))
+                if self.save_often and self.pos % (1000 * self.n) == 0:
+                    with open(self.pkl_path, "wb") as f:
+                        pickle.dump(self.entries, f)
+                        print("Saving, vid:{}, pos:{}".format(self.vid,self.pos))
 
-            cv2.imwrite(targetpath, t_image)
-
-            if self.save_often and self.pos % (1000*self.n) == 0:
-                with open(self.pkl_path, "wb") as f:
-                    pickle.dump(self.entries, f)
-                    print("Saving, vid:{}, pos:{}".format(self.vid,self.pos))
-
-            self.pos += 1
-            ret, frame = cap.read()
+                self.pos += 1
 
         with open(self.pkl_path, "wb") as f:
             pickle.dump(self.entries, f)
@@ -291,21 +296,21 @@ class BCS_boxer(object):
 
 
 if __name__ == '__main__':
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
     config = InferenceConfig()
     config.display()
     model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=config)
     model.load_weights(COCO_MODEL_PATH, by_name=True)
 
     # vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
-    # ds_path = 'D:/Skola/PhD/data/BCS_boxed/'
+    # ds_path = 'D:/Skola/PhD/data/BCS_boxed_12/'
     # results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
 
     pair = '12'
 
     vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
     results_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/results/'
-    ds_path = '/home/k/kocur15/data/BCS_boxed_rot/'
+    ds_path = '/home/k/kocur15/data/BCS_boxed_rot12/'
 
     vid_lists = []
     calib_lists = []
@@ -321,8 +326,8 @@ if __name__ == '__main__':
         vid_lists.append(vid_list)
         calib_lists.append(calib_list)
 
-    pkl_paths = [os.path.join(ds_path, 'dataset{}_{}.pkl'.format(pair, i)) for i in range(7)]
-    image_paths = [os.path.join(ds_path, 'images{}_{}'.format(pair, i)) for i in range(7)]
+    pkl_paths = [os.path.join(ds_path, 'dataset_{}.pkl'.format(i)) for i in range(7)]
+    image_paths = [os.path.join(ds_path, 'images_{}'.format(i)) for i in range(7)]
 
     # vid_list = [os.path.join(vid_path, d, 'video.avi') for d in dir_list]
 

@@ -52,7 +52,7 @@ class Tracker:
             self.write_name = self.name
         else:
             self.write_name = write_name
-        self.write_path = os.path.join(os.path.dirname(json_path),'system_retinanet_{}_{:.0f}.json'.format(self.write_name, self.threshold*100))
+        self.write_path = os.path.join(os.path.dirname(json_path),'system_{}_{:.0f}.json'.format(self.write_name, self.threshold*100))
         self.read_path = os.path.join(os.path.dirname(json_path),'detections_{}.json'.format(self.name))
         self.compare = compare
         self.fake = fake
@@ -71,7 +71,10 @@ class Tracker:
         xmax = box[3]
         ymax = box[4]
         if self.fake:
-            cy_0 = ymin
+            if (self.vp1_t[1] < ymin):
+                cy_0 = ymin
+            else:
+                cy_0 = ymax
         else:
             cy_0 = box[-1] * (ymax - ymin) + ymin
 
@@ -128,6 +131,8 @@ class Tracker:
                 bb_tt.append(intersection(line(bb_tt[3], self.vp1), line(bb_tt[6], self.vp3)))
         else:
             if (xmin < self.vp1_t[0]) and (self.vp1_t[0] < xmax):
+                print("Case 1")
+
                 cy = cy_0
                 bb_t.append([xmin, cy])
                 bb_t.append([xmax, cy])
@@ -144,6 +149,8 @@ class Tracker:
                 bb_tt.append(intersection(line(bb_tt[3], self.vp3), line(bb_tt[4], self.vp1)))
 
             elif self.vp1_t[0] < xmin:
+                print("Case 2")
+
                 cx, cy = intersection(line([xmin, ymax], self.vp1_t), line([0, cy_0], [1, cy_0]))
                 bb_t.append([cx, cy])
                 bb_t.append([xmax, cy])
@@ -160,6 +167,8 @@ class Tracker:
                 bb_tt = [point[0] for point in bb_tt]
                 center = (bb_tt[3] + bb_tt[2])/2
             else:
+                print("Case 3")
+
                 cx, cy = intersection(line([xmax, ymax], self.vp1_t), line([0, cy_0], [1, cy_0]))
 
                 bb_t.append([xmin, cy])
@@ -204,7 +213,10 @@ class Tracker:
         xmax = box[3]
         ymax = box[4]
         if self.fake:
-            cy_0 = ymin
+            if (self.vp1_t[1] < ymin):
+                cy_0 = ymin
+            else:
+                cy_0 = ymax
         else:
             cy_0 = box[-1] * (ymax - ymin) + ymin
 
@@ -233,10 +245,14 @@ class Tracker:
                 cx, cy = intersection(line([xmin, ymax], self.vp1_t), line([0, cy_0], [1, cy_0]))
                 bb_t.append(list(intersection(line([xmax, cy], self.vp1_t), line([xmin, ymax], [xmax, ymax]))))
                 bb_t.append([xmin, ymax])
+                if bb_t[0][0] < bb_t[1][0]:
+                    return None
             else:
                 cx, cy = intersection(line([xmax, ymax], self.vp1_t), line([0, cy_0], [1, cy_0]))
                 bb_t.append([xmax, ymax])
                 bb_t.append(list(intersection(line([xmin, cy], self.vp1_t), line([xmin, ymax], [xmax, ymax]))))
+                if bb_t[0][0] < bb_t[1][0]:
+                    return None
 
         bb_t_array = np.array([[point] for point in bb_t], np.float32)
         bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
@@ -271,9 +287,11 @@ class Tracker:
         for box in boxes:
             if box[0] < self.threshold:
                 continue
-            track = self.get_track(box)
+
             center = self.get_center(box)
-            track.assign_center(center)
+            if center is not None:
+                track = self.get_track(box)
+                track.assign_center(center)
         self.remove()
 
     def read(self):
