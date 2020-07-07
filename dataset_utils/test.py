@@ -99,7 +99,8 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
             images = []
             frames = []
             for _ in range(batch):
-                ret, frame = cap.read()
+                for _ in range(50):
+                    ret, frame = cap.read()
                 if not ret:
                     cap.release()
                     continue
@@ -149,7 +150,8 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
             y_pred = model.predict_on_batch(np.array(images))
             q_predict.put(y_pred)
             print("GPU FPS: {}".format(batch / (time.time() - gpu_time)))
-            draw_raw_output(images, y_pred)
+            if online:
+                draw_raw_output(images, y_pred)
 
     def postprocess():
         tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, pair = pair, threshold=0.5, compare=compare, fake= fake)
@@ -175,7 +177,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
                     out.write(image_b)
                 cv2.imshow('frame', image_b)
                 counter += 1
-                # cv2.imwrite('frames/frame_{}_{}_{}.png'.format(vid_name, name, counter),image_b)
+                cv2.imwrite('frames/frame_{}_{}_{}.png'.format(vid_name, name, counter),image_b)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     e_stop.set()
             if out_path is not None:
@@ -313,11 +315,11 @@ def test_dataset(images_path, ds_path, json_path, im_w, im_h, pair='23'):
 
 
 if __name__ == "__main__":
-    # vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
-    # results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
+    vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
+    results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
 
-    vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
-    results_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/results/'
+    # vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
+    # results_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/results/'
 
     # os.environ['CUDA_VISIBLE_DEVICES'] = '1'
     #
@@ -331,7 +333,7 @@ if __name__ == "__main__":
 
     vid_list = []
     calib_list = []
-    for i in range(4, 7):
+    for i in range(6, 7):
         # if i <= 5:
         #     dir_list = ['session{}_center'.format(i), 'session{}_right'.format(i)]
         # else:
@@ -346,40 +348,34 @@ if __name__ == "__main__":
     pair = '23'
     width = 640
     height = 360
-    name = '{}_{}_{}_3_at30'.format(width, height, pair)
+    name = '{}_{}_{}_3'.format(width, height, pair)
 
     # model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_640_360_23_1_valreg.h5',
     #                                           backbone_name='resnet50', convert=False)
 
-    # model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_{}_at30.h5'.format(name),
-    #                                           backbone_name='resnet50', convert=False)
+    model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_{}_at30.h5'.format(name),
+                                              backbone_name='resnet50', convert=False)
 
     # model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}_at30.h5'.format(name, name),
     #                                           backbone_name='resnet50', convert=False)
 
     # name = '360_640_no_centers_{}_0_at30'.format(pair)
 
-    # print(model.summary)
-    # model._make_predict_function()
-    #
-    # for vid, calib in zip(vid_list, calib_list):
-    #     test_video(model, vid, calib, width, height, 8, name, pair, online = True, fake = False, out_path='D:/Skola/PhD/code/keras-retinanet/video_results/center_6_12.avi')
+    print(model.summary)
+    model._make_predict_function()
+
+    for vid, calib in zip(vid_list, calib_list):
+        test_video(model, vid, calib, width, height, 8, name, pair, online = True, fake = False)# out_path='D:/Skola/PhD/code/keras-retinanet/video_results/center_6_12.avi')
 
     # thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     # thresholds = [0.10, 0.12, 0.14, 0.16, 0.18, 0.20, 0.22, 0.24, 0.26, 0.28, 0.30]
     # thresholds = [0.2]
 
     # name = '{}_{}_{}_1'.format(width, height, pair)
-    # write_name = '360_640_12_fix'
-
-    thresholds = [0.5]
-    keeps = [5, 7, 10, 15, 20]
-
-    for calib, vid in zip(calib_list, vid_list):
-        for threshold in thresholds:
-            for keep in keeps:
-                write_name = '{}_k{}'.format(name, keep)
-                track_detections(calib, vid, pair, width, height, name, threshold, fake = False, keep=keep, write_name= write_name)
+    # write_name = 'Transform3D_540_960_VP2VP3'
+    #
+    # for calib, vid in zip(calib_list, vid_list):
+    #     track_detections(calib, vid, pair, width, height, name, 0.5, fake = False, keep=10, write_name= write_name)
 
 
 

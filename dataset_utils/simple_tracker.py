@@ -31,7 +31,7 @@ class SimpleTracker:
         self.threshold = threshold
         self.keep = keep
         self.frame = 0
-        self.write_path = os.path.join(os.path.dirname(json_path),'system_retinanet_{}_{:.0f}.json'.format(self.name, self.threshold*100))
+        self.write_path = os.path.join(os.path.dirname(json_path),'system_Orig2D.json')
         self.read_path = os.path.join(os.path.dirname(json_path),'detections_{}.json'.format(self.name))
 
 

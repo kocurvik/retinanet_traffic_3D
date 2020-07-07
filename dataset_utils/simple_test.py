@@ -156,8 +156,8 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, out_path=N
     # cv2.destroyAllWindows()
 
 
-def track_detections(json_path, im_w, im_h, name, threshold):
-    tracker = SimpleTracker(json_path, im_w, im_h, name, threshold=threshold)
+def track_detections(json_path, im_w, im_h, name, threshold, keep=5):
+    tracker = SimpleTracker(json_path, im_w, im_h, name, threshold=threshold, keep=keep)
     tracker.read()
 
 if __name__ == "__main__":
@@ -177,27 +177,26 @@ if __name__ == "__main__":
         vid_list.extend([os.path.join(vid_path, d) for d in dir_list])
         calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list])
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    name = '640_360_ablation_0'
+    # os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+    # name = '640_360_ablation_0'
 
     # model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_ablation_640_360.h5',
     #                                           backbone_name='resnet50', convert=False)
 
-    model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}_at30.h5'.format(name, name),
-                                              backbone_name='resnet50', convert=False)
+    # model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}_at30.h5'.format(name, name),
+    #                                           backbone_name='resnet50', convert=False)
 
-    print(model.summary)
-    model._make_predict_function()
+    # print(model.summary)
+    # model._make_predict_function()
 
     name = 'ablation_640_360_0_at30'
 
-    for vid, calib in zip(vid_list, calib_list):
-        test_video(model, vid, calib, 640, 360, 16, name, online=False)
+    # for vid, calib in zip(vid_list, calib_list):
+    #     test_video(model, vid, calib, 640, 360, 16, name, online=False)
 
-    thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    # thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     # # thresholds = [0.1]
     #
     for calib in calib_list:
-        for threshold in thresholds:
-            track_detections(calib, 640, 360, name, threshold)
+        track_detections(calib, 640, 360, name, threshold=0.5, keep=10)
 

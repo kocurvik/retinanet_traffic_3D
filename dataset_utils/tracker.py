@@ -52,7 +52,7 @@ class Tracker:
             self.write_name = self.name
         else:
             self.write_name = write_name
-        self.write_path = os.path.join(os.path.dirname(json_path),'system_{}_{:.0f}.json'.format(self.write_name, self.threshold*100))
+        self.write_path = os.path.join(os.path.dirname(json_path),'system_{}.json'.format(self.write_name, self.threshold*100))
         self.read_path = os.path.join(os.path.dirname(json_path),'detections_{}.json'.format(self.name))
         self.compare = compare
         self.fake = fake
@@ -93,6 +93,9 @@ class Tracker:
                 bb_t_array = np.array([[point] for point in bb_t], np.float32)
                 bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
                 bb_tt = [point[0] for point in bb_tt]
+
+                center = (bb_tt[3] + bb_tt[2]) / 2
+
                 bb_tt.append(intersection(line(bb_tt[1], self.vp1), line(bb_tt[4], self.vp2)))
                 bb_tt.append(intersection(line(bb_tt[2], self.vp1), line(bb_tt[5], self.vp3)))
                 bb_tt.append(intersection(line(bb_tt[3], self.vp1), line(bb_tt[6], self.vp2)))
@@ -131,8 +134,6 @@ class Tracker:
                 bb_tt.append(intersection(line(bb_tt[3], self.vp1), line(bb_tt[6], self.vp3)))
         else:
             if (xmin < self.vp1_t[0]) and (self.vp1_t[0] < xmax):
-                print("Case 1")
-
                 cy = cy_0
                 bb_t.append([xmin, cy])
                 bb_t.append([xmax, cy])
@@ -149,8 +150,6 @@ class Tracker:
                 bb_tt.append(intersection(line(bb_tt[3], self.vp3), line(bb_tt[4], self.vp1)))
 
             elif self.vp1_t[0] < xmin:
-                print("Case 2")
-
                 cx, cy = intersection(line([xmin, ymax], self.vp1_t), line([0, cy_0], [1, cy_0]))
                 bb_t.append([cx, cy])
                 bb_t.append([xmax, cy])
@@ -167,8 +166,6 @@ class Tracker:
                 bb_tt = [point[0] for point in bb_tt]
                 center = (bb_tt[3] + bb_tt[2])/2
             else:
-                print("Case 3")
-
                 cx, cy = intersection(line([xmax, ymax], self.vp1_t), line([0, cy_0], [1, cy_0]))
 
                 bb_t.append([xmin, cy])
@@ -370,7 +367,7 @@ class Tracker:
             return
 
         dist = math.sqrt(math.pow(posX[0] - posX[-1],2) + math.pow(posY[0] - posY[-1],2))
-        if dist > 100:
+        if dist > 30:
             entry = {'frames':track.frames, 'id': track.id, 'posX': posX, 'posY': posY}
             self.json_structure['cars'].append(entry)
 

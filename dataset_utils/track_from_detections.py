@@ -54,37 +54,37 @@ if __name__ == "__main__":
         calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list])
 
     cases = []
-    cases.append({'width': 480, 'height': 270, 'pair': '23', 'name': '{}_{}_{}_1_at30', 'fake': False})
-    cases.append({'width': 640, 'height': 360, 'pair': '23', 'name': '{}_{}_{}_3_at30', 'fake': False})
-    cases.append({'width': 960, 'height': 540, 'pair' :'23', 'name': '{}_{}_{}_1_at30', 'fake': False})
-    cases.append({'width': 270, 'height': 480, 'pair': '12', 'name': '{}_{}_{}_1', 'fake': False})
-    cases.append({'width': 360, 'height': 640, 'pair': '12', 'name': '{}_{}_{}_1', 'fake': False})
+    # cases.append({'width': 480, 'height': 270, 'pair': '23', 'name': '{}_{}_{}_1_at30', 'fake': False})
+    # cases.append({'width': 640, 'height': 360, 'pair': '23', 'name': '{}_{}_{}_3_at30', 'fake': False})
+    # cases.append({'width': 960, 'height': 540, 'pair' :'23', 'name': '{}_{}_{}_1_at30', 'fake': False})
+    # cases.append({'width': 270, 'height': 480, 'pair': '12', 'name': '{}_{}_{}_1', 'fake': False})
+    # cases.append({'width': 360, 'height': 640, 'pair': '12', 'name': '{}_{}_{}_1', 'fake': False})
     # cases.append({'width': 540, 'height': 960, 'pair' :'12', 'name': '{}_{}_{}_1', 'fake': False})
 
-    cases.append({'width': 640, 'height': 360, 'pair': '23', 'name': '{}_{}_no_centers_{}_23_0_at30', 'fake': True})
-    cases.append({'width': 360, 'height': 640, 'pair': '12', 'name': '{}_{}_no_centers_{}_12_0_at30', 'fake': True})
-
-    cases.append({'width': 640, 'height': 360, 'pair': '23', 'name': 'mask_ablation', 'fake': False})
+    # cases.append({'width': 640, 'height': 360, 'pair': '23', 'name': '{}_{}_no_centers_{}_0_at30', 'fake': True})
+    # cases.append({'width': 360, 'height': 640, 'pair': '12', 'name': '{}_{}_no_centers_{}_0_at30', 'fake': True})
+    #
+    # cases.append({'width': 640, 'height': 360, 'pair': '23', 'name': 'mask_ablation', 'fake': False})
 
 
     VP_string = {'12': 'VP1VP2', '23': 'VP2VP3'}
 
 
     write_names = []
-    for calib, vid in zip(calib_list, vid_list):
-        for case in cases:
-            if case['fake']:
-                write_name = 'Transform2D_{}_{}_{}'.format(case['width'], case['height'], VP_string[case['pair']])
+    for case in cases:
+        if case['fake']:
+            write_name = 'Transform2D_{}_{}_{}'.format(case['width'], case['height'], VP_string[case['pair']])
+        else:
+            if case['name'] == 'mask_ablation':
+                write_name = 'MaskRCNN_1024_576'
             else:
-                if case['name'] == 'mask_ablation':
-                    write_name = 'MaskRCNN_1024_576'
-                else:
-                    write_name = 'Transform3D_{}_{}_{}'.format(case['width'], case['height'], VP_string[case['pair']])
+                write_name = 'Transform3D_{}_{}_{}'.format(case['width'], case['height'], VP_string[case['pair']])
 
-            name = case['name'].format(case['width'], case['height'], case['pair'])
-            write_names.append('system_{}'.format(write_name))
-            print("Performing tracking for: {} saving to: {}".format(name, write_name))
-
+        name = case['name'].format(case['width'], case['height'], case['pair'])
+        write_names.append('system_{}'.format(write_name))
+        print("Performing tracking for: {} saving to: {}".format(name, write_name))
+        for calib, vid in zip(calib_list, vid_list):
+            print("Video: {}".format(vid))
             track_detections(calib, vid, case['pair'], case['width'], case['height'], name=name,
                              threshold=0.5, fake=case['fake'], keep=10, write_name=write_name)
     print(write_names)
