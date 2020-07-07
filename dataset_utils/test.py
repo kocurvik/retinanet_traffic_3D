@@ -61,9 +61,12 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
     vp2 = vp2[:-1] / vp2[-1]
     vp3 = vp3[:-1] / vp3[-1]
 
-    cap = cv2.VideoCapture(os.path.join(video_path, 'video.avi'))
-    mask = cv2.imread(os.path.join(video_path, 'video_mask.png'), 0)
-
+    cap = cv2.VideoCapture(video_path)
+    video_path = os.path.dirname(video_path)
+    if os.path.exists(os.path.join(video_path, 'video_mask.png')):
+        mask = cv2.imread(os.path.join(video_path, 'video_mask.png'), 0)
+    else:
+        mask = 255 * np.ones([1080, 1920], dtype=np.uint8)
 
     # cap.set(cv2.CAP_PROP_POS_FRAMES, 1564)
     # for _ in range(1500):
@@ -315,8 +318,8 @@ def test_dataset(images_path, ds_path, json_path, im_w, im_h, pair='23'):
 
 
 if __name__ == "__main__":
-    vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
-    results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
+    # vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
+    # results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
 
     # vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
     # results_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/results/'
@@ -333,17 +336,16 @@ if __name__ == "__main__":
 
     vid_list = []
     calib_list = []
-    for i in range(6, 7):
-        # if i <= 5:
-        #     dir_list = ['session{}_center'.format(i), 'session{}_right'.format(i)]
-        # else:
-        dir_list = ['session{}_center'.format(i), 'session{}_left'.format(i), 'session{}_right'.format(i)]
-        # dir_list = ['session{}_right'.format(i), 'session{}_center'.format(i),]
-        # dir_list = ['session{}_left'.format(i)]
-        vid_list.extend([os.path.join(vid_path, d) for d in dir_list])
-        calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list])
-        # calib_list.extend([os.path.join(results_path, d, 'system_dubska_optimal_calib.json') for d in dir_list])
-        # calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_ManualCalib_ManualScale.json') for d in dir_list])
+    # for i in range(6, 7):
+    #     dir_list = ['session{}_center'.format(i), 'session{}_left'.format(i), 'session{}_right'.format(i)]
+    #     vid_list.extend([os.path.join(vid_path, d, 'video.avi') for d in dir_list])
+    #     calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list])
+
+    vid_path = 'D:/Skola/PhD/data/LuvizonDataset/videos/'
+    results_path = 'D:/Skola/PhD/data/LuvizonDataset/results/'
+
+    vid_list = [os.path.join(vid_path, 'Set0{}'.format(i), 'video01.h264') for i in range(1,6)]
+    calib_list = [os.path.join(results_path, 'Set0{}'.format(i), 'calib.json') for i in range(1, 6)]
 
     pair = '23'
     width = 640
@@ -365,17 +367,17 @@ if __name__ == "__main__":
     model._make_predict_function()
 
     for vid, calib in zip(vid_list, calib_list):
-        test_video(model, vid, calib, width, height, 8, name, pair, online = True, fake = False)# out_path='D:/Skola/PhD/code/keras-retinanet/video_results/center_6_12.avi')
+        test_video(model, vid, calib, width, height, 8, name, pair, online = False, fake = False)# out_path='D:/Skola/PhD/code/keras-retinanet/video_results/center_6_12.avi')
 
     # thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     # thresholds = [0.10, 0.12, 0.14, 0.16, 0.18, 0.20, 0.22, 0.24, 0.26, 0.28, 0.30]
     # thresholds = [0.2]
 
     # name = '{}_{}_{}_1'.format(width, height, pair)
-    # write_name = 'Transform3D_540_960_VP2VP3'
+    write_name = 'Transform3D_640_360_VP2VP3'
     #
-    # for calib, vid in zip(calib_list, vid_list):
-    #     track_detections(calib, vid, pair, width, height, name, 0.5, fake = False, keep=10, write_name= write_name)
+    for calib, vid in zip(calib_list, vid_list):
+        track_detections(calib, vid, pair, width, height, name, 0.3, fake = False, keep=10, write_name= write_name)
 
 
 

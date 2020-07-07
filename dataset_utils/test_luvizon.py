@@ -36,7 +36,7 @@ def test_video(vid_path, model, im_w=640, im_h=360):
 
     json_path = 'D:/Skola/PhD/data/LuvizonDataset/'
 
-    tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name='luvizon', pair = '23', threshold=0.5)
+    tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name='luvizon', pair = '23', threshold=0.3)
 
     cap = cv2.VideoCapture(vid_path)
     ret, frame = cap.read()
