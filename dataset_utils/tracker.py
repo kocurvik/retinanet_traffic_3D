@@ -57,12 +57,13 @@ class Tracker:
         self.compare = compare
         self.fake = fake
 
-        with open(json_path, 'r+') as file:
-        # with open(os.path.join(os.path.dirname(json_path), 'system_retinanet_first.json'), 'r+') as file:
-            structure = json.load(file)
-            if self.compare:
-                self.dubska_cars = structure['cars']
-            self.json_structure = {'cars':[], 'camera_calibration':structure['camera_calibration']}
+        # with open(json_path, 'r+') as file:
+        # # with open(os.path.join(os.path.dirname(json_path), 'system_retinanet_first.json'), 'r+') as file:
+        #     structure = json.load(file)
+        #     if self.compare:
+        #         self.dubska_cars = structure['cars']
+        #     self.json_structure = {'cars':[], 'camera_calibration':structure['camera_calibration']}
+        self.json_structure = {'cars': []}
 
 
     def draw_box(self, box, id, image_b):
