@@ -1,19 +1,23 @@
 import json
 import pickle
 import time
-
 import cv2
-
 import os
 import sys
 import numpy as np
 
-sys.path[0:0] = [os.path.join(sys.path[0], '../../Mask_RCNN')]
-print(sys.path)
-# sys.path[0:0] = ['/home/kocur/code/Mask_RCNN']
-# sys.path[0:0] = ['/home/k/kocur15/code/Mask_RCNN']
+# Script which creates training data from the BrnoCompSpeed dataset
+# for the Transform3D and Transform2D variants from the paper
 
-# print(sys.path)
+# Requires https://github.com/matterport/Mask_RCNN
+
+if os.name == 'nt':
+    sys.path[0:0] = [os.path.join(sys.path[0], '../../Mask_RCNN')]
+else:
+    # sys.path[0:0] = ['/home/kocur/code/Mask_RCNN']
+    sys.path[0:0] = ['/home/k/kocur15/code/Mask_RCNN']
+
+
 
 import coco as coco
 import model as modellib
@@ -302,26 +306,23 @@ if __name__ == '__main__':
     model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=config)
     model.load_weights(COCO_MODEL_PATH, by_name=True)
 
-    # vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
-    # ds_path = 'D:/Skola/PhD/data/BCS_boxed_12/'
-    # results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
-
     pair = '12'
 
-    vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
-    results_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/results/'
-    ds_path = '/home/k/kocur15/data/BCS_boxed_rot12/'
+    if os.name == 'nt':
+        vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
+        ds_path = 'D:/Skola/PhD/data/BCS_boxed_12/'
+        results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
+    else:
+        vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
+        results_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/results/'
+        ds_path = '/home/k/kocur15/data/BCS_boxed_rot12/'
 
     vid_lists = []
     calib_lists = []
-    for i in range(0,7):
-        dir_list = []
-        dir_list.append('session{}_center'.format(i))
-        dir_list.append('session{}_left'.format(i))
-        dir_list.append('session{}_right'.format(i))
-        vid_list = [os.path.join(vid_path, d, 'video.avi') for d in dir_list]
-        # calib_list = [os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list]
 
+    for i in range(0,7):
+        dir_list = ['session{}_center'.format(i), 'session{}_left'.format(i), 'session{}_right'.format(i)]
+        vid_list = [os.path.join(vid_path, d, 'video.avi') for d in dir_list]
         calib_list = [os.path.join(results_path, d, 'system_SochorCVIU_ManualCalib_ManualScale.json') for d in dir_list]
         vid_lists.append(vid_list)
         calib_lists.append(calib_list)

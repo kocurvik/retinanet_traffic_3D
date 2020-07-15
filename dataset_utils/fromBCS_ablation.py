@@ -8,10 +8,15 @@ import os
 import sys
 import numpy as np
 
-sys.path[0:0] = [os.path.join(sys.path[0], '../../Mask_RCNN')]
-# sys.path[0:0] = ['/home/kocur/code/Mask_RCNN']
+# Script which creates training data from the BrnoCompSpeed dataset
+# for ablation experiment referred to in paper as Orig2D
 
-# print(sys.path)
+# Requires https://github.com/matterport/Mask_RCNN
+
+if os.name == 'nt':
+    sys.path[0:0] = [os.path.join(sys.path[0], '../../Mask_RCNN')]
+else:
+    sys.path[0:0] = ['/home/kocur/code/Mask_RCNN']
 
 import coco as coco
 import model as modellib
@@ -177,19 +182,18 @@ if __name__ == '__main__':
     model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=config)
     model.load_weights(COCO_MODEL_PATH, by_name=True)
 
-    # vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
-    # ds_path = 'D:/Skola/PhD/data/BCS_boxed/'
-
-    vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
-    ds_path = '/home/k/kocur15/data/BCS_boxed/'
+    if os.name == 'nt':
+        vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
+        ds_path = 'D:/Skola/PhD/data/BCS_boxed/'
+    else:
+        vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
+        ds_path = '/home/k/kocur15/data/BCS_boxed/'
 
     vid_lists = []
     calib_lists = []
+
     for i in range(4):
-        dir_list = []
-        dir_list.append('session{}_center'.format(i))
-        dir_list.append('session{}_left'.format(i))
-        dir_list.append('session{}_right'.format(i))
+        dir_list = ['session{}_center'.format(i), 'session{}_left'.format(i), 'session{}_right'.format(i)]
         vid_list = [os.path.join(vid_path, d, 'video.avi') for d in dir_list]
         vid_lists.append(vid_list)
 
