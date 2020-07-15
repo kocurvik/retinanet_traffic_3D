@@ -5,8 +5,8 @@ from copy import copy
 
 from geometry import is_right, line, intersection, distance
 
+# Contains helper functions to use the transformation
 
-#wrapper for annoying conversions
 def warp_point(p, M):
     p_t = np.array([p], dtype="float32")
     p_t = np.array([p_t])
@@ -33,25 +33,13 @@ def warp_generator(image, bb3d, vp1, vp2, im_h, im_w):
 
     bb_in = {'x_min': np.amin(xs), 'y_min': np.amin(ys), 'x_max': np.amax(xs), 'y_max': np.amax(ys)}
 
-
-    # image_t = cv2.rectangle(image_t,(bb_out['x_min'],bb_out['y_min']),(bb_out['x_max'],bb_out['y_max']),(255,255,255))
-    # image_l = cv2.rectangle(image_t,(bb_in['x_min'],bb_in['y_min']),(bb_in['x_max'],bb_in['y_max']),(255,0,255))
-    # image_p = copy(image_t)
-    # for point in t_bb3d:
-    #     cv2.circle(image_p,tuple(point[0]),5,(255,0,0))
-    #
-    # cv2.imshow('out',image_t)
-    # cv2.imshow('in',image_l)
-    # cv2.imshow('all',image_p)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-
     return image_t, M, bb_in, bb_out
 
 
 def warp_inference(image, vp1, vp2, im_h, im_w):
     M, IM = get_transform_matrix(vp1, vp2, image, im_w, im_h)
     image_t = cv2.warpPerspective(image, M, (im_w, im_h), borderMode=cv2.BORDER_REPLICATE)
+
     return image_t, M, IM
 
 
@@ -106,7 +94,7 @@ def find_cornerpts(VP, pts):
 
 def get_pts_from_mask(mask, vp1, vp2):
     _, mask = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
-    countours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    countours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2:]
     hull = cv2.convexHull(countours[0])
     pts = hull[:,0,:]
     idx1, idx2 = find_cornerpts(vp1, pts)
