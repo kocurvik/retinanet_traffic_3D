@@ -1,16 +1,15 @@
 import pickle
 import numpy as np
 import os
-import sys
 import cv2
-from dataset_utils.warper import warp_generator
+
+
+# Script to generate the dataset from BoxCars116k
+# for Transform2D and Transform3D approaches from the paper
 
 def generate_ablation_dataset(dataset_path, images_path, t_dataset_path, t_images_path, im_w, im_h):
     with open(dataset_path, "rb") as f:
         ds = pickle.load(f, encoding='latin-1', fix_imports=True)
-
-    # badcameras = ['fit', 'videnska', 'kostel', 'fitDistorted', 'prahaVinohradska', 'kostelDistorted', 'stefanikova',
-    #               'uvoz']
 
     unacceptable = ['uvoz', 'prahaVinohradska', 'stefanikova', 'videnska']
 
@@ -18,10 +17,6 @@ def generate_ablation_dataset(dataset_path, images_path, t_dataset_path, t_image
     tds = {'samples': []}
 
     for s_id, sample in enumerate(ds['samples']):
-
-        # if sample['id'] != 26886:
-        #     continue
-        # sample = ds['samples'][24444]
         camera = sample['camera']
         print(sample['to_camera'])
         if camera in unacceptable or not sample['to_camera']:

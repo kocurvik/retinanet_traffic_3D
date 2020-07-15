@@ -5,6 +5,9 @@ import sys
 import cv2
 from warper import warp_generator
 
+# Script to generate the dataset from BoxCars116k
+# for Transform2D and Transform3D approaches from the paper
+
 def generate_warped_dataset(pair, dataset_path, images_path, t_dataset_path, t_images_path, im_w, im_h):
     with open(dataset_path, "rb") as f:
         ds = pickle.load(f, encoding='latin-1', fix_imports=True)
@@ -12,19 +15,12 @@ def generate_warped_dataset(pair, dataset_path, images_path, t_dataset_path, t_i
     t_dataset_path = t_dataset_path.format(pair)
     t_images_path = t_images_path.format(pair)
 
-    # badcameras = ['fit', 'videnska', 'kostel', 'fitDistorted', 'prahaVinohradska', 'kostelDistorted', 'stefanikova',
-    #               'uvoz']
-
     unacceptable = ['uvoz', 'prahaVinohradska', 'stefanikova', 'videnska']
-
 
     tds = {'samples': []}
 
     for s_id, sample in enumerate(ds['samples']):
 
-        # if sample['id'] != 26886:
-        #     continue
-        # sample = ds['samples'][24444]
         camera = sample['camera']
         if camera in unacceptable:
             continue
