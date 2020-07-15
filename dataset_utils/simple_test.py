@@ -9,6 +9,11 @@ import os
 import sys
 import cv2
 
+# Multithreded script to run the evaluation for the Orig2D
+# ablation experiment. Online version displays the result.
+# Offline version first saves all detections and then tracks
+# them separately.
+
 if __name__ == "__main__" and __package__ is None:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..' ))
     # import keras_retinanet.bin  # noqa: F401
@@ -27,9 +32,12 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, out_path=N
     # with open(json_path, 'r+') as file:
     #      with open(os.path.join(os.path.dirname(json_path), 'system_retinanet_first.json'), 'r+') as file:
 
-
-    cap = cv2.VideoCapture(os.path.join(video_path, 'video.avi'))
-    mask = cv2.imread(os.path.join(video_path, 'video_mask.png'), 0)
+    cap = cv2.VideoCapture(video_path)
+    video_path = os.path.dirname(video_path)
+    if os.path.exists(os.path.join(video_path, 'video_mask.png')):
+        mask = cv2.imread(os.path.join(video_path, 'video_mask.png'), 0)
+    else:
+        mask = 255 * np.ones([1080, 1920], dtype=np.uint8)
 
     ret, frame = cap.read()
     if out_path is not None:
@@ -162,30 +170,30 @@ def track_detections(json_path, im_w, im_h, name, threshold, keep=5):
 
 if __name__ == "__main__":
 
-    # vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
-    # results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
-
-    vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
-    results_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/results/'
+    if os.name == 'nt':
+        vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
+        results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
+    else:
+        vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
+        results_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/results/'
 
     vid_list = []
     calib_list = []
     for i in range(4, 7):
         dir_list = ['session{}_center'.format(i), 'session{}_left'.format(i), 'session{}_right'.format(i)]
-        # dir_list = ['session{}_left'.format(i), 'session{}_right'.format(i)]
-        # dir_list = ['session{}_left'.format(i)]
-        vid_list.extend([os.path.join(vid_path, d) for d in dir_list])
+        vid_list.extend([os.path.join(vid_path, d, 'video.avi') for d in dir_list])
         calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list])
 
     # os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     # name = '640_360_ablation_0'
-
-    # model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_ablation_640_360.h5',
-    #                                           backbone_name='resnet50', convert=False)
-
-    # model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}_at30.h5'.format(name, name),
-    #                                           backbone_name='resnet50', convert=False)
-
+    #
+    # if os.name == 'nt':
+    #     model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_ablation_640_360.h5',
+    #                                               backbone_name='resnet50', convert=False)
+    # else:
+    #     model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}_at30.h5'.format(name, name),
+    #                                               backbone_name='resnet50', convert=False)
+    #
     # print(model.summary)
     # model._make_predict_function()
 
@@ -194,9 +202,6 @@ if __name__ == "__main__":
     # for vid, calib in zip(vid_list, calib_list):
     #     test_video(model, vid, calib, 640, 360, 16, name, online=False)
 
-    # thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-    # # thresholds = [0.1]
-    #
     for calib in calib_list:
         track_detections(calib, 640, 360, name, threshold=0.5, keep=10)
 

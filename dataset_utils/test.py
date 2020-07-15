@@ -9,6 +9,13 @@ import os
 import sys
 import cv2
 
+# Multithreded script to run the evaluation for the Transform2D
+# and Transform3D methods. Online version displays the result.
+# Offline version first saves all detections and then tracks
+# them separately.
+
+# Also includes a method to visually check the generated datasets.
+
 if __name__ == "__main__" and __package__ is None:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..' ))
     # import keras_retinanet.bin  # noqa: F401
@@ -24,6 +31,8 @@ from keras_retinanet.utils.image import preprocess_image
 from keras import backend as K
 
 import keras_retinanet.models
+
+TIMEOUT = 20
 
 
 def draw_raw_output(images, y_pred):
@@ -104,9 +113,11 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
             for _ in range(batch):
                 for _ in range(50):
                     ret, frame = cap.read()
-                if not ret:
+                if not ret or frame is None:
                     cap.release()
-                    continue
+                    q_images.put(images)
+                    q_images.put(None)
+                    break
                 frames.append(frame)
                 image = cv2.bitwise_and(frame, frame, mask=mask)
                 # t_image = cv2.warpPerspective(image, M, (im_w, im_h), borderMode=cv2.BORDER_CONSTANT)
@@ -127,9 +138,12 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
             images = []
             for _ in range(batch):
                 ret, frame = cap.read()
-                if not ret:
+                if not ret or frame is None:
                     cap.release()
-                    continue
+                    q_images.put(images)
+                    q_images.put(None)
+                    # e_stop.set()
+                    break
                 image = cv2.bitwise_and(frame, frame, mask=mask)
                 t_image = cv2.remap(image, map, None, cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
                 t_image = preprocess_image(t_image)
@@ -142,7 +156,9 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
         #                                           backbone_name='resnet50', convert=False)
         while (not e_stop.isSet()):
             try:
-                images = q_images.get(timeout=100)
+                images = q_images.get(timeout=TIMEOUT)
+                if images is None:
+                    break
             except Empty:
                 break
             gpu_time = time.time()
@@ -162,8 +178,8 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
         total_time = time.time()
         while not e_stop.isSet():
             try:
-                y_pred = q_predict.get(timeout=100)
-                frames = q_frames.get(timeout=100)
+                y_pred = q_predict.get(timeout=TIMEOUT)
+                frames = q_frames.get(timeout=TIMEOUT)
             except Empty:
                 tracker.write()
                 break
@@ -200,7 +216,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
         frame_cnt = 1
         while not e_stop.isSet():
             try:
-                y_pred = q_predict.get(timeout=100)
+                y_pred = q_predict.get(timeout=TIMEOUT)
             except Empty:
                 writer.write()
                 break
@@ -246,7 +262,10 @@ def track_detections(json_path, video_path, pair,  im_w, im_h, name, threshold, 
     vp1, vp2, vp3, _, _, _ = computeCameraCalibration(camera_calibration["vp1"], camera_calibration["vp2"],
                                                       camera_calibration["pp"])
 
-    mask = cv2.imread(os.path.join(video_path, 'video_mask.png'), 0)
+    if os.path.exists(os.path.join(video_path, 'video_mask.png')):
+        mask = cv2.imread(os.path.join(video_path, 'video_mask.png'), 0)
+    else:
+        mask = 255 * np.ones([1080, 1920], dtype=np.uint8)
 
     vp1 = vp1[:-1] / vp1[-1]
     vp2 = vp2[:-1] / vp2[-1]
@@ -318,13 +337,17 @@ def test_dataset(images_path, ds_path, json_path, im_w, im_h, pair='23'):
 
 
 if __name__ == "__main__":
-    # vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
-    # results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
+    vid_list = []
+    calib_list = []
 
-    # vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
-    # results_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/results/'
+    if os.name == 'nt':
+        vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
+        results_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/'
+    else:
+        vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
+        results_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/results/'
 
-    # os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     #
     # import tensorflow as tf
     # from keras import backend as k
@@ -334,57 +357,53 @@ if __name__ == "__main__":
     # config.gpu_options.per_process_gpu_memory_fraction = 0.45
     # k.tensorflow_backend.set_session(tf.Session(config=config))
 
-    vid_list = []
-    calib_list = []
-    # for i in range(6, 7):
-    #     dir_list = ['session{}_center'.format(i), 'session{}_left'.format(i), 'session{}_right'.format(i)]
-    #     vid_list.extend([os.path.join(vid_path, d, 'video.avi') for d in dir_list])
-    #     calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list])
+    for i in range(4, 7):
+        dir_list = ['session{}_center'.format(i), 'session{}_left'.format(i), 'session{}_right'.format(i)]
+        vid_list.extend([os.path.join(vid_path, d, 'video.avi') for d in dir_list])
+        calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list])
 
-    vid_path = 'D:/Skola/PhD/data/LuvizonDataset/videos/'
-    results_path = 'D:/Skola/PhD/data/LuvizonDataset/results/'
 
-    vid_list = [os.path.join(vid_path, 'Set0{}'.format(i), 'video01.h264') for i in range(1,6)]
-    calib_list = [os.path.join(results_path, 'Set0{}'.format(i), 'calib.json') for i in range(1, 6)]
+    # if os.name == 'nt':
+    #     vid_path = 'D:/Skola/PhD/data/LuvizonDataset/videos/'
+    #     results_path = 'D:/Skola/PhD/data/LuvizonDataset/results/'
+    # else:
+    #     vid_path = '/home/k/kocur15/data/luvizon/videos/'
+    #     results_path = '/home/k/kocur15/data/luvizon/results/'
+    #
+    # vid_list = [os.path.join(vid_path, 'Set0{}'.format(i), 'video01.h264') for i in range(1,6)]
+    # calib_list = [os.path.join(results_path, 'Set0{}'.format(i), 'calib.json') for i in range(1, 6)]
 
     pair = '23'
-    width = 640
-    height = 360
-    name = '{}_{}_{}_3'.format(width, height, pair)
+    width = 960
+    height = 540
+    name = '{}_{}_{}_1'.format(width, height, pair)
 
     # model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_640_360_23_1_valreg.h5',
     #                                           backbone_name='resnet50', convert=False)
 
-    model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_{}_at30.h5'.format(name),
-                                              backbone_name='resnet50', convert=False)
 
-    # model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}_at30.h5'.format(name, name),
-    #                                           backbone_name='resnet50', convert=False)
-
-    # name = '360_640_no_centers_{}_0_at30'.format(pair)
+    if os.name =='nt':
+        model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_{}_at30.h5'.format(name),
+                                                  backbone_name='resnet50', convert=False)
+    else:
+        model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}_at30.h5'.format(name, name),
+                                                  backbone_name='resnet50', convert=False)
 
     print(model.summary)
     model._make_predict_function()
 
     for vid, calib in zip(vid_list, calib_list):
-        test_video(model, vid, calib, width, height, 8, name, pair, online = False, fake = False)# out_path='D:/Skola/PhD/code/keras-retinanet/video_results/center_6_12.avi')
+        test_video(model, vid, calib, width, height, 16, name, pair, online=False, fake=False)# out_path='D:/Skola/PhD/code/keras-retinanet/video_results/center_6_12.avi')
 
     # thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     # thresholds = [0.10, 0.12, 0.14, 0.16, 0.18, 0.20, 0.22, 0.24, 0.26, 0.28, 0.30]
     # thresholds = [0.2]
 
     # name = '{}_{}_{}_1'.format(width, height, pair)
-    write_name = 'Transform3D_640_360_VP2VP3'
-    #
+    write_name = 'Transform3D_960_540_VP2VP3'
+
     for calib, vid in zip(calib_list, vid_list):
-        track_detections(calib, vid, pair, width, height, name, 0.3, fake = False, keep=10, write_name= write_name)
-
-
-
-    #
-    # for calib in calib_list:
-    #     for threshold in thresholds:
-    #         track_detections(calib, vid, pair, 640, 360, name, threshold)
+        track_detections(calib, vid, pair, width, height, name, 0.3, fake = False, keep=5, write_name=write_name)
 
     # test_dataset('D:/Skola/PhD/data/BCS_boxed_12/images_0', 'D:/Skola/PhD/data/BCS_boxed_12/dataset_0.pkl',
     #              'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/session0_center/system_SochorCVIU_ManualCalib_ManualScale.json',
