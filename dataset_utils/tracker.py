@@ -10,6 +10,9 @@ import numpy as np
 from dataset_utils.geometry import line, intersection
 from dataset_utils.warper import warp_point
 
+# Contains the Tracker class which does both online
+# and offline tracking.
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 import keras_retinanet.bin  # noqa: F401
 __package__ = "keras_retinanet.bin"
@@ -57,13 +60,13 @@ class Tracker:
         self.compare = compare
         self.fake = fake
 
-        # with open(json_path, 'r+') as file:
-        # # with open(os.path.join(os.path.dirname(json_path), 'system_retinanet_first.json'), 'r+') as file:
-        #     structure = json.load(file)
-        #     if self.compare:
-        #         self.dubska_cars = structure['cars']
-        #     self.json_structure = {'cars':[], 'camera_calibration':structure['camera_calibration']}
-        self.json_structure = {'cars': []}
+        with open(json_path, 'r+') as file:
+        # with open(os.path.join(os.path.dirname(json_path), 'system_retinanet_first.json'), 'r+') as file:
+            structure = json.load(file)
+            if self.compare:
+                self.dubska_cars = structure['cars']
+            self.json_structure = {'cars':[], 'camera_calibration':structure['camera_calibration']}
+        # self.json_structure = {'cars': []}
 
 
     def draw_box(self, box, id, image_b):
