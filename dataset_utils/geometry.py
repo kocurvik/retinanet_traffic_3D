@@ -2,6 +2,8 @@ import math
 
 import numpy as np
 
+# Couple of helper geometry functions
+# Last two of them are taken from https://github.com/JakubSochor/BrnoCompSpeed
 
 def distance(p1, p2, p3):
     return np.cross(p2-p1,p3-p1)/np.linalg.norm(p2-p1)
@@ -10,9 +12,11 @@ def distance(p1, p2, p3):
 def is_right(l1,l2,p):
     return ((p[0] - l1[0])*(l2[1]-l1[1]) - (p[1] - l1[1])*(l2[0]-l1[0])) < 0
 
+
 def isLeft(A, B, P):
     ret = (P[0] - A[0]) * (B[1] - A[1]) - (P[1] - A[1]) * (B[0] - A[0])
     return ret < 0
+
 
 def tangent_point_poly(p, V, im_h):
     left_idx = 0
@@ -50,6 +54,16 @@ def intersection(L1, L2):
 
 def getFocal(vp1, vp2, pp):
     return math.sqrt(- np.dot(vp1[0:2]-pp[0:2], vp2[0:2]-pp[0:2]))
+
+
+def getWorldCoordinagesOnRoadPlane(p, focal, roadPlane, pp):
+    p = p/p[2]
+    pp = pp/pp[2]
+    ppW = np.concatenate((pp[0:2], [0]))
+    pW = np.concatenate((p[0:2], [focal]))
+    dirVec = pW - ppW
+    t = -np.dot(roadPlane, np.concatenate((ppW, [1])))/np.dot(roadPlane[0:3], dirVec)
+    return ppW + t*dirVec
 
 
 def computeCameraCalibration(_vp1, _vp2, _pp):
