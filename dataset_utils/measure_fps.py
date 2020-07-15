@@ -16,6 +16,10 @@ if __name__ == "__main__" and __package__ is None:
     # __package__ = "keras_retinanet.bin"
     print(sys.path)
 
+# Script used to determine the FPS of a deployed system
+
+# This differs from test.py by removing the live display and drawing
+# from the live version.
 
 from dataset_utils.tracker import Tracker
 from dataset_utils.warper import get_transform_matrix, get_transform_matrix_with_criterion
