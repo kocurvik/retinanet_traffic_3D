@@ -4,8 +4,11 @@ import sys
 import time
 from queue import Queue, Empty
 from threading import Thread, Event
-
 import tensorflow as tf
+
+# Script used to evaluate the MaskRCNN ablation experiment
+
+# Requires https://github.com/matterport/Mask_RCNN
 
 if os.name == 'nt':
     COCO_MODEL_PATH = os.path.join('D:/Skola/PhD/code/Mask_RCNN_v2', "mask_rcnn_coco.h5")
@@ -51,10 +54,6 @@ def get_single_box_mask(image, M, vp, im_w, im_h):
     x_min, y_min, w, h = cv2.boundingRect(cnt)
     x_max = x_min + w
     y_max = y_min + h
-
-    # x_min, y_min, w, h = cv2.boundingRect(cnt)
-    # x_max = x_min + w
-    # y_max = y_min + h
 
     if x_max < vp[0]:
         # box vlavo
@@ -324,20 +323,9 @@ if __name__ == '__main__':
     vid_list = []
     calib_list = []
     for i in range(4, 7):
-        # if i == 5:
-        #     dir_list = ['session{}_left'.format(i), 'session{}_right'.format(i)]
-        # elif i == 6:
-        #     dir_list = ['session{}_right'.format(i)]
-        # else:
-        #     dir_list = ['session{}_center'.format(i), 'session{}_left'.format(i), 'session{}_right'.format(i)]
-
         dir_list = ['session{}_center'.format(i), 'session{}_left'.format(i), 'session{}_right'.format(i)]
-        # dir_list = ['session{}_left'.format(i)]
         vid_list.extend([os.path.join(vid_path, d) for d in dir_list])
         calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list])
-
-        # calib_list.extend([os.path.join(results_path, d, 'system_dubska_optimal_calib.json') for d in dir_list])
-        # calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_ManualCalib_ManualScale.json') for d in dir_list])
 
     # os.environ['CUDA_VISIBLE_DEVICES'] = '1'
     name = 'mask_ablation'
@@ -354,10 +342,8 @@ if __name__ == '__main__':
     for vid, calib in zip(vid_list, calib_list):
         test_video(model, vid, calib, 640, 360, 1, name, out_path=None, online = False)
 
-    # thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-    # thresholds = [0.10, 0.12, 0.14, 0.16, 0.18, 0.20, 0.22, 0.24, 0.26, 0.28, 0.30]
-    # thresholds = [0.5]
-    #
-    # for calib, vid in zip(calib_list, vid_list):
-    #     for threshold in thresholds:
-    #         track_detections(calib, vid, 640, 360, name, threshold)
+    thresholds = [0.5]
+
+    for calib, vid in zip(calib_list, vid_list):
+        for threshold in thresholds:
+            track_detections(calib, vid, 640, 360, name, threshold)
