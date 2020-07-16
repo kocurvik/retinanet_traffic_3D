@@ -15,6 +15,7 @@ import cv2
 # them separately.
 
 # Also includes a method to visually check the generated datasets.
+from dataset_utils.utils import FolderVideoReader
 
 if __name__ == "__main__" and __package__ is None:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..' ))
@@ -70,12 +71,17 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
     vp2 = vp2[:-1] / vp2[-1]
     vp3 = vp3[:-1] / vp3[-1]
 
-    cap = cv2.VideoCapture(video_path)
-    video_path = os.path.dirname(video_path)
-    if os.path.exists(os.path.join(video_path, 'video_mask.png')):
-        mask = cv2.imread(os.path.join(video_path, 'video_mask.png'), 0)
+    if os.path.isdir(video_path):
+        cap = FolderVideoReader(video_path)
+        video_dir = video_path
     else:
-        mask = 255 * np.ones([1080, 1920], dtype=np.uint8)
+        cap = cv2.VideoCapture(video_path)
+        video_dir = os.path.dirname(video_path)
+    if os.path.exists(os.path.join(video_dir, 'video_mask.png')):
+        mask = cv2.imread(os.path.join(video_dir, 'video_mask.png'), 0)
+    else:
+        ret, img = cap.read()
+        mask = 255 * np.ones(img.shape[:2], dtype=np.uint8)
 
     # cap.set(cv2.CAP_PROP_POS_FRAMES, 1564)
     # for _ in range(1500):
@@ -173,7 +179,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
                 draw_raw_output(images, y_pred)
 
     def postprocess():
-        tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, pair = pair, threshold=0.5, compare=compare, fake= fake)
+        tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, pair = pair, threshold=0.2, compare=compare, fake= fake)
         counter = 0
         total_time = time.time()
         while not e_stop.isSet():
@@ -373,6 +379,10 @@ if __name__ == "__main__":
     # vid_list = [os.path.join(vid_path, 'Set0{}'.format(i), 'video01.h264') for i in range(1,6)]
     # calib_list = [os.path.join(results_path, 'Set0{}'.format(i), 'calib.json') for i in range(1, 6)]
 
+    vid_list = ['D:/Skola/PhD/data/DETRAC/Insight-MVT_Annotation_Test/MVI_39031']
+    calib_list = ['D:/Skola/PhD/data/DETRAC/Insight-MVT_Annotation_Test/MVI_39031/calib.json']
+
+
     pair = '23'
     width = 960
     height = 540
@@ -380,7 +390,6 @@ if __name__ == "__main__":
 
     # model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_640_360_23_1_valreg.h5',
     #                                           backbone_name='resnet50', convert=False)
-
 
     if os.name =='nt':
         model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_{}_at30.h5'.format(name),
@@ -393,7 +402,7 @@ if __name__ == "__main__":
     model._make_predict_function()
 
     for vid, calib in zip(vid_list, calib_list):
-        test_video(model, vid, calib, width, height, 16, name, pair, online=False, fake=False)# out_path='D:/Skola/PhD/code/keras-retinanet/video_results/center_6_12.avi')
+        test_video(model, vid, calib, width, height, 2, name, pair, online=False, fake=False)# out_path='D:/Skola/PhD/code/keras-retinanet/video_results/center_6_12.avi')
 
     # thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     # thresholds = [0.10, 0.12, 0.14, 0.16, 0.18, 0.20, 0.22, 0.24, 0.26, 0.28, 0.30]
@@ -403,7 +412,7 @@ if __name__ == "__main__":
     write_name = 'Transform3D_960_540_VP2VP3'
 
     for calib, vid in zip(calib_list, vid_list):
-        track_detections(calib, vid, pair, width, height, name, 0.3, fake = False, keep=5, write_name=write_name)
+        track_detections(calib, vid, pair, width, height, name, 0.2, fake = False, keep=5, write_name=write_name)
 
     # test_dataset('D:/Skola/PhD/data/BCS_boxed_12/images_0', 'D:/Skola/PhD/data/BCS_boxed_12/dataset_0.pkl',
     #              'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/session0_center/system_SochorCVIU_ManualCalib_ManualScale.json',
