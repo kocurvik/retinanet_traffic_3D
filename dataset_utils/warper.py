@@ -104,13 +104,13 @@ def get_pts_from_mask(mask, vp1, vp2):
     return [pts[0], pts[3], pts[2], pts[1]]
 
 
-def get_transform_matrix_with_criterion(vp1, vp2, mask, im_w, im_h, constraint=0.8, enforce_vp1=True):
+def get_transform_matrix_with_criterion(vp1, vp2, mask, im_w, im_h, constraint=0.8, enforce_vp1=True, vp_top=None):
     pts = get_pts_from_mask(mask, vp1, vp2)
     print(pts)
     # pts =[[0, 0], [mask.shape[1], 0], [mask.shape[1], mask.shape[0]], [0, mask.shape[0]]]
     image = 255 * np.ones([mask.shape[0], mask.shape[1]])
 
-    M, IM = get_transform_matrix(vp1, vp2, mask, im_w, im_h, pts=pts, enforce_vp1=enforce_vp1)
+    M, IM = get_transform_matrix(vp1, vp2, mask, im_w, im_h, pts=pts, enforce_vp1=enforce_vp1, vp_top=vp_top)
     t_image = cv2.warpPerspective(image, M, (im_w, im_h), borderMode=cv2.BORDER_CONSTANT)
 
     while cv2.countNonZero(t_image)/(im_w*im_h) < constraint:
@@ -125,13 +125,13 @@ def get_transform_matrix_with_criterion(vp1, vp2, mask, im_w, im_h, constraint=0
         # cv2.waitKey(0)
 
         print(pts)
-        M, IM = get_transform_matrix(vp1, vp2, mask, im_w, im_h, pts=pts, enforce_vp1=enforce_vp1)
+        M, IM = get_transform_matrix(vp1, vp2, mask, im_w, im_h, pts=pts, enforce_vp1=enforce_vp1, vp_top=vp_top)
         t_image = cv2.warpPerspective(image, M, (im_w, im_h), borderMode=cv2.BORDER_CONSTANT)
 
     return M, IM
 
 
-def get_transform_matrix(vp1, vp2, image, im_w, im_h, pts=None, enforce_vp1=True):
+def get_transform_matrix(vp1, vp2, image, im_w, im_h, pts=None, enforce_vp1=True, vp_top=None):
     if pts is None:
         pts = [[0,0],[image.shape[1],0],[image.shape[1],image.shape[0]],[0,image.shape[0]]]
 
@@ -156,14 +156,13 @@ def get_transform_matrix(vp1, vp2, image, im_w, im_h, pts=None, enforce_vp1=True
     ipts.append(intersection(vp1l1, vp2l2))
     ipts.append(intersection(vp1l2, vp2l2))
 
-    # image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-    # for p in ipts:
-    #     image = cv2.circle(image,p,40,(0,0,255),thickness=3)
+    image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+    for p in ipts:
+        image = cv2.circle(image, p, 40, (0, 0, 255), thickness=3)
     # cv2.imshow("Mask with pts", image)
     # cv2.waitKey(0)
 
     if enforce_vp1:
-
         if vp1[1] > im_h:
             t_dpts = [[im_w, 0], [im_w, im_h], [0, im_h], [0, 0]]
 
@@ -183,7 +182,16 @@ def get_transform_matrix(vp1, vp2, image, im_w, im_h, pts=None, enforce_vp1=True
             t_ipts[3, :] = ipts[3]
             t_ipts[2, :] = ipts[1]
 
-        return cv2.getPerspectiveTransform(t_ipts, t_pts), cv2.getPerspectiveTransform(t_pts, t_ipts)
+        if vp_top is not None:
+            t_ipts = np.roll(t_ipts, -1, axis=0)
+            for roll in range(4):
+                t_ipts = np.roll(t_ipts, 1, axis=0)
+                M = cv2.getPerspectiveTransform(t_ipts, t_pts)
+                vp_top_t = cv2.perspectiveTransform(np.array([[vp_top]]), M)
+                if vp_top_t[0,0,1] < 0:
+                    return cv2.getPerspectiveTransform(t_ipts, t_pts), cv2.getPerspectiveTransform(t_pts, t_ipts)
+        else:
+            return cv2.getPerspectiveTransform(t_ipts, t_pts), cv2.getPerspectiveTransform(t_pts, t_ipts)
 
 
     ipts = np.array(ipts, np.float32)

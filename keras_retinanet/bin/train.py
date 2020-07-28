@@ -240,61 +240,120 @@ def create_generators(args, preprocess_image):
         transform_generator = random_transform_generator(flip_x_chance=0.5)
 
     if args.centers:
-        args.dataset_type = 'BC+BCS'
+        if args.dataset_type == 'BC+BCS':
 
-        # BCS_path = 'D:/Skola/PhD/data/BCS_boxed/'
-        # Box_images = 'C:/datasets/BoxCars116k/images_warped'
-        # Box_dataset = 'C:/datasets/BoxCars116k/dataset_warped.pkl'
+            # BCS_path = 'D:/Skola/PhD/data/BCS_boxed/'
+            # Box_images = 'C:/datasets/BoxCars116k/images_warped'
+            # Box_dataset = 'C:/datasets/BoxCars116k/dataset_warped.pkl'
 
-        if args.rot:
-            BCS_path = '/home/k/kocur15/data/BCS_boxed_rot{}/'
-            Box_images = '/home/k/kocur15/data/BoxCars116k/images_warped_rot{}/'
-            Box_dataset = '/home/k/kocur15/data/BoxCars116k/dataset_warped_rot{}.pkl'
+            if args.rot:
+                BCS_path = '/home/k/kocur15/data/BCS_boxed_rot{}/'
+                Box_images = '/home/k/kocur15/data/BoxCars116k/images_warped_rot{}/'
+                Box_dataset = '/home/k/kocur15/data/BoxCars116k/dataset_warped_rot{}.pkl'
+            else:
+                BCS_path = '/home/k/kocur15/data/BCS_boxed{}/'
+                Box_images = '/home/k/kocur15/data/BoxCars116k/images_warped{}/'
+                Box_dataset = '/home/k/kocur15/data/BoxCars116k/dataset_warped{}.pkl'
+
+            if args.pair == '12':
+                pairs = ['12']
+            elif args.pair == '23':
+                pairs = ['23']
+            elif args.pair == 'both':
+                pairs = ['12', '23']
+            else:
+                pairs = ['23']
+
+
+            def split_exclusion_fn_train(filename):
+                if int(filename.split("_")[-1].split(".")[0]) < 30000 // 25:
+                    return True
+                return False
+
+            def split_exclusion_fn_val(filename):
+                if int(filename.split("_")[-1].split(".")[0]) >= 30000 // 25:
+                    return True
+                return False
+
+            train_generator = Centers_Generator(
+                pairs,
+                BCS_path,
+                Box_dataset,
+                Box_images,
+                BCS_sessions=[0,1,2,3],
+                split_exclusion_function=split_exclusion_fn_train,
+                **common_args
+            )
+
+            validation_generator = Centers_Generator(
+                pairs,
+                BCS_path,
+                None,
+                None,
+                BCS_sessions=[0,1,2,3],
+                split_exclusion_function=split_exclusion_fn_val,
+                **common_args
+            )
+            return train_generator, validation_generator
+
         else:
             BCS_path = '/home/k/kocur15/data/BCS_boxed{}/'
-            Box_images = '/home/k/kocur15/data/BoxCars116k/images_warped{}/'
-            Box_dataset = '/home/k/kocur15/data/BoxCars116k/dataset_warped{}.pkl'
 
-        if args.pair == '12':
-            pairs = ['12']
-        elif args.pair == '23':
-            pairs = ['23']
-        elif args.pair == 'both':
-            pairs = ['12', '23']
-        else:
-            pairs = ['23']
+            if args.pair == '12':
+                pairs = ['12']
+            elif args.pair == '23':
+                pairs = ['23']
+            elif args.pair == 'both':
+                pairs = ['12', '23']
+            else:
+                pairs = ['23']
 
+            def split_exclusion_fn_train(filename):
+                if int(filename.split("_")[-1].split(".")[0]) < 30000 // 25:
+                    return True
+                return False
 
-        def split_exclusion_fn_train(filename):
-            if int(filename.split("_")[-1].split(".")[0]) < 30000 // 25:
-                return True
-            return False
+            def split_exclusion_fn_val(filename):
+                if int(filename.split("_")[-1].split(".")[0]) >= 30000 // 25:
+                    return True
+                return False
 
-        def split_exclusion_fn_val(filename):
-            if int(filename.split("_")[-1].split(".")[0]) >= 30000 // 25:
-                return True
-            return False
+            if  args.dataset_type == 'luvizon':
+                train_generator = Centers_Generator(
+                    pairs,
+                    BCS_path,
+                    None,
+                    None,
+                    BCS_sessions=[9],
+                    split_exclusion_function=split_exclusion_fn_train,
+                    **common_args
+                )
 
-        train_generator = Centers_Generator(
-            pairs,
-            BCS_path,
-            Box_dataset,
-            Box_images,
-            BCS_sessions=[0,1,2,3],
-            split_exclusion_function=split_exclusion_fn_train,
-            **common_args
-        )
+            elif args.dataset_type == 'BC+luvizon':
+                Box_images = '/home/k/kocur15/data/BoxCars116k/images_warped{}/'
+                Box_dataset = '/home/k/kocur15/data/BoxCars116k/dataset_warped{}.pkl'
 
-        validation_generator = Centers_Generator(
-            pairs,
-            BCS_path,
-            None,
-            None,
-            BCS_sessions=[0,1,2,3],
-            split_exclusion_function=split_exclusion_fn_val,
-            **common_args
-        )
-        return train_generator, validation_generator
+                train_generator = Centers_Generator(
+                    pairs,
+                    BCS_path,
+                    Box_dataset,
+                    Box_images,
+                    BCS_sessions=[9],
+                    split_exclusion_function=split_exclusion_fn_train,
+                    **common_args
+                )
+
+            validation_generator = Centers_Generator(
+                pairs,
+                BCS_path,
+                None,
+                None,
+                BCS_sessions=[9],
+                split_exclusion_function=split_exclusion_fn_val,
+                **common_args
+            )
+
+            return train_generator, validation_generator
 
     if args.no_centers:
         args.dataset_type = 'BC+BCS'

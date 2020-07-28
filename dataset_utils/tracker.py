@@ -24,6 +24,7 @@ font = cv2.FONT_HERSHEY_SIMPLEX
 
 class Tracker:
     def __init__(self, json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, threshold = 0.7, pair='23', keep=5, compare = False, fake = False, write_name = None, save_often = True):
+        self.detrac_detection_strings = []
         self.tracks = []
         self.assigned = []
         self.last_id = 0
@@ -70,6 +71,29 @@ class Tracker:
 
 
     def draw_box(self, box, id, image_b):
+        bb_tt, center = self.get_bb(box)
+        bb_tt = [tuple(point) for point in bb_tt]
+
+        image_b = cv2.line(image_b, bb_tt[0], bb_tt[1], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[1], bb_tt[2], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[2], bb_tt[3], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[3], bb_tt[0], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[0], bb_tt[4], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[1], bb_tt[5], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[2], bb_tt[6], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[3], bb_tt[7], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[4], bb_tt[5], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[5], bb_tt[6], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[6], bb_tt[7], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[7], bb_tt[4], (0, 128, 0), 9)
+
+        # image_b = cv2.putText(image_b, str(id), bb_tt[3], font, 4, (0, 0, 255), 2, cv2.LINE_AA)
+
+        image_b = cv2.circle(image_b, (int(center[0]), int(center[1])), 5, (0, 255, 255), 5)
+
+        return image_b, center
+
+    def get_bb(self, box):
         xmin = box[1]
         ymin = box[2]
         xmax = box[3]
@@ -81,11 +105,10 @@ class Tracker:
                 cy_0 = ymax
         else:
             cy_0 = box[-1] * (ymax - ymin) + ymin
-
         bb_t = []
-
         if (self.vp1_t[1] < ymin):
             if (xmin < self.vp1_t[0]) and (self.vp1_t[0] < xmax):
+                # print("Case 1")
                 cy = cy_0
                 cx = xmin
                 bb_t.append([cx, cy])
@@ -105,6 +128,7 @@ class Tracker:
                 bb_tt.append(intersection(line(bb_tt[3], self.vp1), line(bb_tt[6], self.vp2)))
 
             elif self.vp1_t[0] < xmin:
+                # print("Case 2")
                 cx, cy = intersection(line([xmin, ymin], self.vp1_t), line([0, cy_0], [1, cy_0]))
                 bb_t.append([cx, cy])
                 bb_t.append([xmax, cy])
@@ -120,7 +144,8 @@ class Tracker:
                 bb_tt.append(intersection(line(bb_tt[1], self.vp1), line(bb_tt[4], self.vp2)))
                 bb_tt.append(intersection(line(bb_tt[2], self.vp1), line(bb_tt[5], self.vp3)))
                 bb_tt.append(intersection(line(bb_tt[3], self.vp1), line(bb_tt[6], self.vp2)))
-            else: # vp1_t[0] > xmax
+            else:  # vp1_t[0] > xmax
+                # print("Case 3")
                 cx, cy = intersection(line([xmax, ymin], self.vp1_t), line([0, cy_0], [1, cy_0]))
                 bb_t.append([cx, cy])
                 bb_t.append([cx, ymax])
@@ -136,8 +161,10 @@ class Tracker:
                 bb_tt.append(intersection(line(bb_tt[1], self.vp1), line(bb_tt[4], self.vp3)))
                 bb_tt.append(intersection(line(bb_tt[2], self.vp1), line(bb_tt[5], self.vp2)))
                 bb_tt.append(intersection(line(bb_tt[3], self.vp1), line(bb_tt[6], self.vp3)))
+        # elif (self.vp1_t[1] > ymax):
         else:
             if (xmin < self.vp1_t[0]) and (self.vp1_t[0] < xmax):
+                # print("Case 4")
                 cy = cy_0
                 bb_t.append([xmin, cy])
                 bb_t.append([xmax, cy])
@@ -154,6 +181,7 @@ class Tracker:
                 bb_tt.append(intersection(line(bb_tt[3], self.vp3), line(bb_tt[4], self.vp1)))
 
             elif self.vp1_t[0] < xmin:
+                # print("Case 5")
                 cx, cy = intersection(line([xmin, ymax], self.vp1_t), line([0, cy_0], [1, cy_0]))
                 bb_t.append([cx, cy])
                 bb_t.append([xmax, cy])
@@ -162,14 +190,17 @@ class Tracker:
 
                 bb_t.append([cx, ymin])
                 bb_t.append([xmax, ymin])
-                bb_t.append(list(intersection(line(bb_t[2], [bb_t[2][0], bb_t[2][1] + 1]), line(self.vp1_t, [xmax, ymin]))))
+                bb_t.append(
+                    list(intersection(line(bb_t[2], [bb_t[2][0], bb_t[2][1] + 1]), line(self.vp1_t, [xmax, ymin]))))
                 bb_t.append(list(intersection(line(bb_t[6], [bb_t[6][0] + 1, bb_t[6][1]]), line([xmin, 0], [xmin, 1]))))
 
                 bb_t_array = np.array([[point] for point in bb_t], np.float32)
                 bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
                 bb_tt = [point[0] for point in bb_tt]
-                center = (bb_tt[3] + bb_tt[2])/2
+                center = (bb_tt[3] + bb_tt[2]) / 2
             else:
+                # print("Case 6: {}".format(self.vp1_t))
+                print("xmax: {}, xmin: {}, ymin:{}, ymax:{}, c:{}".format(xmax, xmin, ymin, ymax, cy_0))
                 cx, cy = intersection(line([xmax, ymax], self.vp1_t), line([0, cy_0], [1, cy_0]))
 
                 bb_t.append([xmin, cy])
@@ -186,27 +217,59 @@ class Tracker:
                 bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
                 bb_tt = [point[0] for point in bb_tt]
                 center = (bb_tt[2] + bb_tt[3]) / 2
+        # else:
+            # if xmax < self.vp1_t[0]:
+            #     if cy_0 < self.vp1_t[1]:
+            #         cx, cy = intersection(line([xmin, ymin], [xmin + 1, ymin]), line([xmax, cy_0], self.vp1_t))
+            #         bb_t.append([xmin, ymin])
+            #         bb_t.append([cx, ymin])
+            #         bb_t.append([cx, ymax])
+            #         bb_t.append([xmin, ymax])
+            #         bb_t.append(intersection(line(bb_t[0], self.vp1_t), line([xmax, cy_0] , [xmax + 1, cy_0])))
+            #         bb_t.append(intersection(line(bb_t[1], self.vp1_t), line([xmax, cy_0] , [xmax + 1, cy_0])))
+            #         bb_t.append(intersection(line(bb_t[2], self.vp1_t), line([xmax, ymax] , [xmax, ymax + 1])))
+            #         bb_t.append(intersection(line(bb_t[3], self.vp1_t), line(bb_t[4] , [bb_t[4][0], bb_t[4][1] + 1])))
+            #
+            #         bb_t_array = np.array([[point] for point in bb_t], np.float32)
+            #         bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
+            #         bb_tt = [point[0] for point in bb_tt]
+            #         center = (bb_tt[2] + bb_tt[3]) / 2
+            #     else:
+            #         cx, cy = intersection(line([xmin, ymax], [xmin + 1, ymax]), line([xmax, cy_0], self.vp1_t))
+            #         bb_t.append([xmin, ymin])
+            #         bb_t.append([cx, ymin])
+            #         bb_t.append([cx, ymax])
+            #         bb_t.append([xmin, ymax])
+            #         tx, ty = intersection(line([cx, ymin], self.vp1_t), line([xmax, ymin], [xmax, ymin + 1]))
+            #
+            #         bb_t.append(intersection(line(bb_t[0], self.vp1_t), line([tx, ty] , [tx + 1, ty])))
+            #         bb_t.append([tx, ty])
+            #         bb_t.append(intersection(line(bb_t[2], self.vp1_t), line([xmax, ymax] , [xmax, ymax + 1])))
+            #         bb_t.append(intersection(line(bb_t[3], self.vp1_t), line(bb_t[4] , [bb_t[4][0], bb_t[4][1] + 1])))
+            #
+            #         bb_t_array = np.array([[point] for point in bb_t], np.float32)
+            #         bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
+            #         bb_tt = [point[0] for point in bb_tt]
+            #         center = (bb_tt[2] + bb_tt[3]) / 2
+            # # elif xmin > self.vp1_t[0]:
+            # #             #     ...
+            # else:
+        # bb_t = []
+        # bb_t.append([xmin, ymin])
+        # bb_t.append([xmax, ymin])
+        # bb_t.append([xmax, ymax])
+        # bb_t.append([xmin, ymax])
+        # bb_t.append([xmin, ymin])
+        # bb_t.append([xmax, ymin])
+        # bb_t.append([xmax, ymax])
+        # bb_t.append([xmin, ymax])
+        #
+        # bb_t_array = np.array([[point] for point in bb_t], np.float32)
+        # bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
+        # bb_tt = [point[0] for point in bb_tt]
+        # center = (bb_tt[2] + bb_tt[3]) / 2
 
-        bb_tt = [tuple(point) for point in bb_tt]
-
-        image_b = cv2.line(image_b, bb_tt[0], bb_tt[1], (0, 0, 255), 2)
-        image_b = cv2.line(image_b, bb_tt[1], bb_tt[2], (0, 0, 255), 2)
-        image_b = cv2.line(image_b, bb_tt[2], bb_tt[3], (0, 0, 255), 2)
-        image_b = cv2.line(image_b, bb_tt[3], bb_tt[0], (0, 0, 255), 2)
-        image_b = cv2.line(image_b, bb_tt[0], bb_tt[4], (0, 0, 255), 2)
-        image_b = cv2.line(image_b, bb_tt[1], bb_tt[5], (0, 0, 255), 2)
-        image_b = cv2.line(image_b, bb_tt[2], bb_tt[6], (0, 0, 255), 2)
-        image_b = cv2.line(image_b, bb_tt[3], bb_tt[7], (0, 0, 255), 2)
-        image_b = cv2.line(image_b, bb_tt[4], bb_tt[5], (0, 0, 255), 2)
-        image_b = cv2.line(image_b, bb_tt[5], bb_tt[6], (0, 0, 255), 2)
-        image_b = cv2.line(image_b, bb_tt[6], bb_tt[7], (0, 0, 255), 2)
-        image_b = cv2.line(image_b, bb_tt[7], bb_tt[4], (0, 0, 255), 2)
-
-        # image_b = cv2.putText(image_b, str(id), bb_tt[3], font, 4, (0, 0, 255), 2, cv2.LINE_AA)
-
-        image_b = cv2.circle(image_b, (int(center[0]), int(center[1])), 5, (0,255,0), 3)
-
-        return image_b, center
+        return bb_tt, center
 
     def get_center(self, box):
         xmin = box[1]
@@ -267,7 +330,6 @@ class Tracker:
         if self.frame % 1000 == 0 and self.save_often:
             self.write()
 
-
         for box in boxes:
             if box[0] < self.threshold:
                 continue
@@ -304,6 +366,34 @@ class Tracker:
             else:
                 self.process_offline(np.array(boxes))
         self.write()
+
+    def process_detrac_detection(self, boxes):
+        self.frame += 1
+
+        for i, box in enumerate(boxes):
+            bb_t, center = self.get_bb(box)
+            bb_t = np.array(bb_t)
+            x_min = np.min(bb_t[:, 0])
+            x_max = np.max(bb_t[:, 0])
+            y_min = np.min(bb_t[:, 1])
+            y_max = np.max(bb_t[:, 1])
+            t = box[0]
+            s = '{}, {}, {}, {}, {}, {}, {}'.format(self.frame, i + 1, x_min, y_min, x_max - x_min, y_max - y_min, t)
+            self.detrac_detection_strings.append(s)
+        return
+
+    def export_detrac_detections(self, out_path):
+        with open(self.read_path, 'r') as file:
+            list_of_boxes = json.load(file)
+        for boxes in list_of_boxes:
+            if len(boxes) == 0:
+                self.process_detrac_detection(boxes)
+            else:
+                self.process_detrac_detection(np.array(boxes))
+
+        with open(out_path, 'w') as f:
+            for s in self.detrac_detection_strings:
+                f.write('{}\n'.format(s))
 
     def remove(self):
         for i in reversed([i for (i, t) in enumerate(self.tracks) if t.check_misses(self.keep)]):

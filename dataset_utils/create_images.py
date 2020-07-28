@@ -1,11 +1,11 @@
 import json
-
 import cv2
 import numpy as np
 
 from dataset_utils.warper import get_transform_matrix, get_transform_matrix_with_criterion
 from dataset_utils.geometry import line, intersection, computeCameraCalibration
 
+# Helper script to generate some images
 
 def add_cross(image, center, color):
     thickness = 3
@@ -187,8 +187,42 @@ def generate_mask_image():
     cv2.imwrite('image2.png', t_image2)
 
 
+def generate_calib_image():
+    session = 'session4_right'
+
+    json_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/results/{}/system_SochorCVIU_Edgelets_BBScale_Reg.json'.format(session)
+    mask = cv2.imread('D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset/{}/video_mask.png'.format(session), 0)
+    screen = cv2.imread('D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset/{}/screen.png'.format(session))
+
+    with open(json_path, 'r+') as file:
+        structure = json.load(file)
+        camera_calibration = structure['camera_calibration']
+
+    vp1, vp2, vp3, _, _, _ = computeCameraCalibration(camera_calibration["vp1"], camera_calibration["vp2"],
+                                                      camera_calibration["pp"])
+    vp1 = vp1[:-1] / vp1[-1]
+    vp2 = vp2[:-1] / vp2[-1]
+    vp3 = vp3[:-1] / vp3[-1]
+
+    x = 960
+    y = 540
+    p = np.array([x, y])
+    vp1d = vp1 - p
+    vp2d = vp2 - p
+    vp3d = vp3 - p
+    vp1n = vp1d / np.linalg.norm(vp1d)
+    vp2n = vp2d / np.linalg.norm(vp2d)
+    vp3n = vp3d / np.linalg.norm(vp3d)
+
+    screen = cv2.line(screen, (x, y), (int(x + 500 *vp1n[0]), int(y + 500 * vp1n[1])), (0, 255, 255), thickness=9)
+    screen = cv2.line(screen, (x, y), (int(x + 500 *vp2n[0]), int(y + 500 * vp2n[1])), (255, 0, 0), thickness=9)
+    screen = cv2.line(screen, (x, y), (int(x + 500 *vp3n[0]), int(y + 500 * vp3n[1])), (0, 0, 255), thickness=9)
+    cv2.imshow("out", screen)
+    cv2.imwrite("calib.png", screen)
+    cv2.waitKey(0)
+
 if __name__ == "__main__":
-    generate_mask_image()
+    generate_calib_image()
 
 
 

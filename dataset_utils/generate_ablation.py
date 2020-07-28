@@ -13,7 +13,6 @@ def generate_ablation_dataset(dataset_path, images_path, t_dataset_path, t_image
 
     unacceptable = ['uvoz', 'prahaVinohradska', 'stefanikova', 'videnska']
 
-
     tds = {'samples': []}
 
     for s_id, sample in enumerate(ds['samples']):

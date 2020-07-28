@@ -16,14 +16,16 @@ def get_vp1(cap, mask, debug=False):
     lk_params = dict(winSize=(31, 31), maxLevel=4, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
     feature_params = dict(maxCorners=20, qualityLevel=0.4, minDistance=10, blockSize=11)
     ret, prev_frame = cap.read()
-    prev_frame = cv2.bitwise_and(prev_frame, prev_frame, mask=mask)
+    # prev_frame = cv2.bitwise_and(prev_frame, prev_frame, mask=mask)
     prev_gray = cv2.cvtColor(prev_frame, cv2.COLOR_BGR2GRAY)
 
-    acc = Accumulator(size=256, debug=debug)
+    acc = Accumulator(size=256, debug=debug, height=mask.shape[0], width=mask.shape[1])
     cnt = 0
     while ret and cnt < 1000:
         ret, next_frame = cap.read()
-        next_frame = cv2.bitwise_and(next_frame, next_frame, mask=mask)
+        if not ret or next_frame is None:
+            continue
+        # next_frame = cv2.bitwise_and(next_frame, next_frame, mask=mask)
         cnt += 1
 
         next_gray = cv2.cvtColor(next_frame, cv2.COLOR_BGR2GRAY)
@@ -57,11 +59,14 @@ def get_vp1(cap, mask, debug=False):
     return vp
 
 def get_vp2(vp1, cap, mask, skip=10, debug=False):
+
+    pp = [mask.shape[1]/2 + 0.5, mask.shape[0]/2 + 0.5]
+
     mask_reduced = cv2.erode(mask, element_big)
 
     back_sub = cv2.createBackgroundSubtractorMOG2()
 
-    acc = Accumulator(size=256, debug=debug)
+    acc = Accumulator(size=256, debug=debug, height=mask.shape[0], width=mask.shape[1])
 
     cnt = -10
     ret = True
@@ -116,17 +121,19 @@ def get_vp2(vp1, cap, mask, skip=10, debug=False):
                 q = s[0] / s[1]
                 d = u[:, 0]
 
-                if q < 500:
+                if q < 300:
                     continue
 
                 n_vp = vp1 - np.flip(seed)
                 dot_product = np.dot(n_vp / np.linalg.norm(n_vp), d/np.linalg.norm(d))
                 angle = np.arccos(dot_product)
 
-                if 0.25 * np.pi < angle < 0.75 * np.pi:
+                if 0.325 * np.pi < angle < 0.625 * np.pi:
                     if debug:
                         frame = cv2.line(frame, (int(seed[1] - 10 * d[1]), int(seed[0] + 10 * d[0])),
                                          (int(seed[1] + 10 * d[1]), int(seed[0] - 10 * d[0])), (0, 0, 255), 1)
+                        frame = cv2.line(frame, (int(vp1[0]), int(vp1[1])),
+                                         (int(seed[1]), int(seed[0])), (0, 255, 255), 1)
                     continue
 
                 a_list.append(d[0])
@@ -148,14 +155,15 @@ def get_vp2(vp1, cap, mask, skip=10, debug=False):
                 cv2.waitKey(1)
 
             if cnt % 100 == 0:
-                vp = acc.get_vp()
+                vp = acc.get_conditional_vp(vp1, pp)
                 print("VP so far: {}".format(vp))
 
-    vp = acc.get_vp()
+    vp = acc.get_conditional_vp(vp1, pp)
     return vp
 
 
-def test_video(video_path, calib_path=None, debug=False, out_path=None):
+def calib_video(video_path, calib_path=None, debug=False, out_path=None):
+    print('Calibrating for video: {}'.format(video_path))
     if os.path.isdir(video_path):
         cap = FolderVideoReader(video_path)
         video_dir = video_path
@@ -175,14 +183,14 @@ def test_video(video_path, calib_path=None, debug=False, out_path=None):
             vp1_test, vp2_test = camera_calibration["vp1"], camera_calibration["vp2"]
             print("Test VP: {}, {}".format(vp1_test, vp2_test))
 
-    vp1 = get_vp1(cap, mask, debug=True)
+    vp1 = get_vp1(cap, mask, debug=debug)
     print("Detected vp1: {}".format(vp1))
     cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
     vp2 = get_vp2(vp1, cap, mask, debug=debug, skip=3)
     print("Detected vp2: {}".format(vp2))
 
     if out_path is not None:
-        pp = [mask.shape[1] + 0.5, mask.shape[0] + 0.5]
+        pp = [mask.shape[1]/2 + 0.5, mask.shape[0]/2 + 0.5]
         camera_calibration = {'vp1': vp1, 'vp2': vp2, 'pp': pp}
         json_structure = {'cars': [], 'camera_calibration': camera_calibration}
         with open(out_path,'w') as file:
@@ -203,6 +211,12 @@ if __name__ == "__main__":
     # for v, c in zip(vid_list, calib_list):
     #     test_video(v, c)
 
-    vid_path = 'D:/Skola/PhD/data/DETRAC/Insight-MVT_Annotation_Test/MVI_39031'
-    out_path = 'D:/Skola/PhD/data/DETRAC/Insight-MVT_Annotation_Test/MVI_39031/calib.json'
-    test_video(vid_path, debug=True, out_path=out_path)
+    vid_dir = 'D:/Skola/PhD/data/DETRAC/Insight-MVT_Annotation_Test/'
+    vids = ['MVI_39031', 'MVI_39051','MVI_39211', 'MVI_39271', 'MVI_39371', 'MVI_39501', 'MVI_39511', 'MVI_40742', 'MVI_40743', 'MVI_40863', 'MVI_40864']
+    # vids = ['MVI_40742', 'MVI_40743']
+
+    vid_list = [os.path.join(vid_dir, v) for v in vids]
+    calib_list = [os.path.join(vid_dir, v, 'calib.json') for v in vids]
+
+    for vid, calib in zip(vid_list, calib_list):
+        calib_video(vid, debug=False, out_path=calib)
