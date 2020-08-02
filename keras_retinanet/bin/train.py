@@ -309,14 +309,16 @@ def create_generators(args, preprocess_image):
                 pairs = ['23']
 
             def split_exclusion_fn_train(filename):
-                if int(filename.split("_")[-1].split(".")[0]) < 30000 // 25:
+                thresholds = [3800, 2140, 5300, 5450, 5450, 5450, 5450, 3450, 8150]
+                filename = os.path.basename(filename)
+                vid_id = int(filename.split('_')[0])
+                img_id = int(filename.split("_")[-1].split(".")[0])
+                if img_id < thresholds[vid_id]:
                     return True
                 return False
 
             def split_exclusion_fn_val(filename):
-                if int(filename.split("_")[-1].split(".")[0]) >= 30000 // 25:
-                    return True
-                return False
+                return not split_exclusion_fn_train(filename)
 
             if  args.dataset_type == 'luvizon':
                 train_generator = Centers_Generator(
@@ -601,6 +603,10 @@ def parse_args(args):
     csv_parser.add_argument('classes', help='Path to a CSV file containing class label mapping.')
     csv_parser.add_argument('--val-annotations', help='Path to CSV file containing annotations for validation (optional).')
 
+    luvizon_parser = subparsers.add_parser('luvizon')
+    bcbcs_parser = subparsers.add_parser('BC+BCS')
+    bcluvizon_parser = subparsers.add_parser('BC+luvizon')
+
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--snapshot',          help='Resume training from a snapshot.')
     group.add_argument('--imagenet-weights',  help='Initialize the model with pretrained imagenet weights. This is the default behaviour.', action='store_const', const=True, default=True)
@@ -653,6 +659,16 @@ def main(args=None):
 
     # create the model
     if args.snapshot is not None:
+        # if args.centers:
+        #     model, training_model, prediction_model = create_models(
+        #         backbone_retinanet=backbone.retinanet,
+        #         num_classes=train_generator.num_classes(),
+        #         weights=,
+        #         multi_gpu=args.multi_gpu,
+        #         freeze_backbone=args.freeze_backbone,
+        #         submobodels='centers'
+        #     )
+        # else:
         print('Loading model, this may take a second...')
         model            = models.load_model(args.snapshot, backbone_name=args.backbone)
         training_model   = model

@@ -403,7 +403,7 @@ class Tracker:
     def get_track(self, box):
         if len(self.tracks) == 0:
             self.last_id += 1
-            new_track = self.Track(box,self.last_id, self.frame)
+            new_track = self.Track(box, self.last_id, self.frame)
             self.tracks.append(new_track)
             return new_track
 
@@ -434,10 +434,10 @@ class Tracker:
         posY = []
 
         for frame, center, box in zip(track.frames, track.centers, track.boxes):
-            if center[0] > 1920 - 10 or center[0] < 10:
-                continue
-            if center[1] > 1080 - 10 or center[1] < 10:
-                continue
+            # if center[0] > 1920 - 10 or center[0] < 10:
+            #     continue
+            # if center[1] > 1080 - 10 or center[1] < 10:
+            #     continue
 
             # xmin = box[-5]
             # ymin = box[-4]

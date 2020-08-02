@@ -4,86 +4,180 @@ import cv2
 import numpy as np
 
 from dataset_utils.geometry import distance, computeCameraCalibration, getWorldCoordinagesOnRoadPlane
+from scipy.spatial import Delaunay
 
 import xml.etree.ElementTree as ET
 
 from scipy.optimize import curve_fit
 
-Y_LANE = 100
-Y_TOP = 50
-Y_BOTTOM = 300
+MAX_FRAMES = 200
 
-X_LANE12 = 600
-X_LANE23 = 900
-X_LANE34 = 1380
+def old_lane_functor():
+    Y_LANE = 100
+    Y_TOP = 50
+    Y_BOTTOM = 600
 
-LANE1_MATRIX = np.array([[0.45748904,	0.45510265,	95.80971527],
-                         [0.04026574,	1.66259563,	-5.53627539],
-                         [-0.00011619,	0.00107257,	1.00000000]])
+    X_LANE12 = 600
+    X_LANE23 = 900
+    X_LANE34 = 1380
 
-LANE2_MATRIX = np.array([[0.45887539, 0.70749354, 337.20050049],
-                         [0.03581188, 1.72447097, -7.71867371],
-                         [-0.00004267, 0.00108679, 1.00000000]])
+    def fit_line(y, k, l):
+        return k * y + l
 
-LANE3_MATRIX = np.array([[0.37196219, 0.92335510, 589.98767090],
-                         [-0.03626568, 1.70345390, 54.57832336],
-                         [-0.00008483, 0.00105958, 1.00000000]])
+    def lane_fn(car):
+        x = car['posX']
+        y = car['posY']
+        popt, _ = curve_fit(fit_line, y, x)
+        x_lane = popt[0] * Y_LANE + popt[1]
+        if x_lane < X_LANE12:
+            return 1
+        elif x_lane < X_LANE23:
+            return 2
+        elif x_lane < X_LANE34:
+            return 3
+        else:
+            return 0
+
+    def valid_meas_fn(car):
+        pts = []
+        frames = []
+        for x, y, f in zip(car['posX'], car['posY'], car['frames']):
+            if Y_TOP < y < Y_BOTTOM:
+                pts.append(np.array([x, y]))
+                frames.append(f)
+        return np.array(pts), np.array(frames)
+
+    return lane_fn, valid_meas_fn
+
+SCALES = [[], [], []]
 
 
+def projector_functor(matrices_path):
+    matrices = np.loadtxt(matrices_path)
 
-MAX_FRAMES = 25
+    m1 = matrices[:3, :]
+    m2 = matrices[3:6, :]
+    m3 = matrices[6:, :]
 
-SCALES = []
+    def project_fn(pts, lane):
+        x_h = np.array(pts).T
+        if lane == 1:
+            y = m1 @ x_h
+        elif lane == 2:
+            y = m2 @ x_h
+        else:
+            y = m3 @ x_h
 
-def project(pts, lane):
-    x_h = np.array(pts).T
-    if lane == 1:
-        y = LANE1_MATRIX @ x_h
-    elif lane == 2:
-        y = LANE2_MATRIX @ x_h
-    else:
-        y = LANE3_MATRIX @ x_h
+        y = y.T
+        y = y[:, :2] / y[:, 2, np.newaxis]
+        return y
 
-    y = y.T
-    y = y[:, :2]/y[:, 2, np.newaxis]
-    return y
-
-def fit_line(y, k, l):
-    return k*y + l
+    return project_fn
 
 
-def compute_speed(car, focal, roadPlane, pp, scale):
-    pts = []
-    frames = []
-    for x, y, f in zip(car['posX'], car['posY'], car['frames']):
-        if Y_TOP < y < Y_BOTTOM:
-            pts.append(np.array([x, y, 1]))
-            frames.append(f)
+def old_projector_functor(structure):
+    vp1 = structure['camera_calibration']['vp1']
+    vp2 = structure['camera_calibration']['vp2']
+    pp = structure['camera_calibration']['pp']
+    # scale = structure['camera_calibration']['scale']
+    # vp1 = [660.0, -807.6190476190476]
+    # vp2 = [-11988.0, 1344.0]
 
+    vp1, vp2, vp3, pp, roadPlane, focal = computeCameraCalibration(vp1, vp2, pp)
+
+    vp1 = vp1[:-1] / vp1[-1]
+    vp2 = vp2[:-1] / vp2[-1]
+    vp3 = vp3[:-1] / vp3[-1]
+
+    def project_fn(pts, lane):
+        return np.array([getWorldCoordinagesOnRoadPlane(p, focal, roadPlane, pp) for p in pts])
+
+    return project_fn
+
+
+def in_hull(p, hull):
+    """
+    Test if points in `p` are in `hull`
+
+    `p` should be a `NxK` coordinates of `N` points in `K` dimensions
+    `hull` is either a scipy.spatial.Delaunay object or the `MxK` array of the
+    coordinates of `M` points in `K`dimensions for which Delaunay triangulation
+    will be computed
+    """
+    hull = Delaunay(hull)
+    return hull.find_simplex(p) >= 0
+
+
+def lane_functor(path):
+    root = ET.parse(path).getroot()[0]
+
+    lane_hulls = [None, None, None]
+    meas_hulls = [None, None, None]
+
+    for lane in root:
+        id = int(lane.attrib['id'])
+        list = [[pts.attrib['x'], pts.attrib['y']] for pts in lane]
+        if lane.tag == 'lane':
+            lane_hulls[id - 1] = Delaunay(np.array(list))
+        else:
+            meas_hulls[id - 1] = Delaunay(np.array(list))
+
+    def lane_fn(car):
+        x = np.array(car['posX'])
+        y = np.array(car['posY'])
+        xy = np.column_stack([x, y])
+        assigned_lanes = np.zeros_like(x)
+        for i in range(3):
+            cond = lane_hulls[i].find_simplex(xy) == 1
+            assigned_lanes = np.where(cond, i + 1, assigned_lanes)
+
+        counts = np.bincount(assigned_lanes.astype(np.int))
+        if (counts[1:] > 5).any:
+            counts[0] = 0
+        return np.argmax(counts)
+
+    def valid_meas_fn(car):
+        x = np.array(car['posX'])
+        y = np.array(car['posY'])
+        xy = np.column_stack([x, y])
+        frames = np.array(car['frames'])
+
+        cond = lane_hulls[car['lane'] - 1].find_simplex(xy)
+        return xy[cond > 0, :], frames[cond > 0]
+
+    return lane_fn, valid_meas_fn
+
+
+def compute_speed(car, valid_meas_fn, project_fn, scales):
+    if car['lane'] == 0:
+        return None
+    xy, frames = valid_meas_fn(car)
+    pts = np.column_stack([xy, np.ones_like(frames)])
     # pts = pts[-min(len(pts), MAX_FRAMES):]
     if len(pts) < 6:
-        return 50.0
+        return None
 
     # coords = np.array([getWorldCoordinagesOnRoadPlane(p, focal, roadPlane, pp) for p in pts])
     # coords = coords[:, :2] / coords[:, 2, np.newaxis]
-    coords = project(pts, car['lane'])
+    coords = project_fn(pts, car['lane'])
 
-    dists = np.linalg.norm(coords[:-5] - coords[5:], axis=1)
-    frames = np.array(frames)
-    f_dists = frames[5:] - frames[:-5]
+    # dists = np.linalg.norm(coords[:-5] - coords[5:], axis=1)
+    # f_dists = frames[5:] - frames[:-5]
+    dists = np.linalg.norm(coords[:-1] - coords[1:], axis=1)
+    f_dists = frames[1:] - frames[:-1]
 
     # dists = np.linalg.norm(np.diff(coords, axis=0), axis=1)
     # f_dists = np.diff(np.array(frames))
-    median_dist = np.median(dists/f_dists)
-    median_speed = median_dist * scale * 3.6
-
+    # median_dist = np.median(dists / f_dists)
+    median_dist = np.mean(dists / f_dists)
+    median_speed = median_dist * 3.6 / 30.15 * scales[car['lane'] - 1]
     return median_speed
 
 
-def match_cars(gt_cars, cars):
-    errors = []
+def clean_gt(gt_cars):
+    valid_gt_cars = []
+    tot = 0
     for gt_car in gt_cars:
-
         radar_element = gt_car.find('radar')
         if radar_element is None or gt_car.attrib['moto'] == 'True':
             continue
@@ -93,89 +187,166 @@ def match_cars(gt_cars, cars):
         gt_lane = int(gt_car.attrib['lane'])
         gt_speed = float(radar['speed'])
 
-        # print(radar)
-
-        plausible_cars = [car for car in cars if car['lane'] == gt_lane
-                          and (car['frames'][-min(len(car['frames']), 100)] < end_frame and start_frame < car['frames'][-1])]
-
-        # for car in plausible_cars:
-        #     print("Detection speed: {} in lane {}".format(car['speed'], car['lane']))
-        if len(plausible_cars) == 1:
-            SCALES.append(gt_speed / plausible_cars[0]['speed'])
-            errors.append(gt_speed - plausible_cars[0]['speed'])
-        elif len(plausible_cars) > 1:
-            ers = [gt_speed - car['speed'] for car in plausible_cars]
-            idx = np.argmin(np.abs(ers))
-            # SCALES.append(gt_speed/plausible_cars[idx]['speed'])
-            errors.append(ers[idx])
-
-    errors = np.array(errors)
-
-    print("Recall: {}".format(len(errors)/ len(gt_cars)))
-    print("Correct: {}".format(((errors < 3) & (errors > -3)).sum() / len(errors)))
-    print(np.median(np.abs(errors)))
-    print(np.mean(np.abs(errors)))
+        valid_gt_car = {'start_frame': start_frame, 'end_frame': end_frame, 'lane': gt_lane, 'speed': gt_speed,
+                        'matched': False}
+        valid_gt_cars.append(valid_gt_car)
+    return valid_gt_cars
 
 
-def test_video(results_path, name):
-    json_path = os.path.join(results_path, 'system_{}.json'.format(name))
+def track_iou(gt_car, car):
+    frames = set(car['frames'])
+    gt_frames = set(range(gt_car['start_frame'], gt_car['end_frame'] + 1))
+    return len(frames.intersection(gt_frames)) / len(frames.union(gt_frames))
+
+
+def match_cars(gt_cars, cars, verbose=False):
+    errors = []
+    valid_gt_cars = clean_gt(gt_cars)
+    prev_assigned = 1
+
+    # first match all easy matches to their own
+    while sum([gt_car['matched'] for gt_car in valid_gt_cars]) != prev_assigned:
+        prev_assigned = sum([gt_car['matched'] for gt_car in valid_gt_cars])
+        for gt_car in valid_gt_cars:
+            if gt_car['matched']:
+                continue
+            plausible_car_idxs = [idx for idx, car in enumerate(cars) if car['lane'] == gt_car['lane'] and
+                                  (car['frames'][-min(len(car['frames']), MAX_FRAMES)] < gt_car['end_frame'] and
+                                   gt_car['start_frame'] < car['frames'][-1])]
+            if len(plausible_car_idxs) == 1:
+                car = cars[plausible_car_idxs[0]]
+                # errors.append(gt_car['speed'] - car['speed'])
+                gt_car['matched'] = True
+                gt_car['match'] = car
+                del cars[plausible_car_idxs[0]]
+
+    for gt_car in valid_gt_cars:
+        if gt_car['matched']:
+            continue
+
+        plausible_car_idxs = [idx for idx, car in enumerate(cars) if car['lane'] == gt_car['lane'] and
+                              (car['frames'][-min(len(car['frames']), MAX_FRAMES)] < gt_car['end_frame'] and
+                               gt_car['start_frame'] < car['frames'][-1])]
+
+        if len(plausible_car_idxs) == 0:
+            continue
+        elif len(plausible_car_idxs) == 1:
+            car_idx = plausible_car_idxs[0]
+        else:
+            ious = [track_iou(gt_car, cars[idx]) for idx in plausible_car_idxs]
+            max_idx = np.argmax(ious)
+            car_idx = plausible_car_idxs[max_idx]
+        car = cars[car_idx]
+        # errors.append(gt_car['speed'] - car['speed'])
+        gt_car['matched'] = True
+        gt_car['match'] = car
+        del cars[car_idx]
+
+    return valid_gt_cars
+
+
+def test_video(json_path, gt_path, scales, verbose=False):
     with open(json_path, 'r+') as file:
         structure = json.load(file)
 
-    vp1 = structure['camera_calibration']['vp1']
-    vp2 = structure['camera_calibration']['vp2']
-    pp = structure['camera_calibration']['pp']
-    # scale = structure['camera_calibration']['scale']
-    # vp1 = [660.0, -807.6190476190476]
-    # vp2 = [-11988.0, 1344.0]
-    scale = 1.0 * 0.557577870532032
-
-
-
-    vp1, vp2, vp3, pp, roadPlane, focal = computeCameraCalibration(vp1, vp2, pp)
-
-    vp1 = vp1[:-1] / vp1[-1]
-    vp2 = vp2[:-1] / vp2[-1]
-    vp3 = vp3[:-1] / vp3[-1]
-
     cars = structure['cars']
 
-    for car in cars:
-        x = car['posX']
-        y = car['posY']
-        popt, _ = curve_fit(fit_line, y, x)
-        x_lane = popt[0] * Y_LANE + popt[1]
-        if x_lane < X_LANE12:
-            lane = 1
-        elif x_lane < X_LANE23:
-            lane = 2
-        elif x_lane < X_LANE34:
-            lane = 3
-        else:
-            lane = 4
-        car['lane'] = lane
-        car['speed'] = compute_speed(car, focal, roadPlane, pp, scale)
-
-
-    gt_root = ET.parse(os.path.join(results_path, 'gt.xml')).getroot()
+    gt_measurements_path = os.path.join(gt_path, 'vehicles.xml')
+    gt_root = ET.parse(gt_measurements_path).getroot()
     gt_cars_xml = gt_root[0]
     gt_cars = []
     for car in gt_cars_xml:
         gt_cars.append(car)
 
-    matches = match_cars(gt_cars, cars)
+    # lane_fn, valid_meas_fn = lane_functor(os.path.join(gt_path, 'lanes.xml'))
+    lane_fn, valid_meas_fn = old_lane_functor()
 
+    # project_fn = projector_functor(os.path.join(gt_path, 'matrix.txt'))
+
+    project_fn = old_projector_functor(structure)
+
+    valid_cars = []
+    for car in cars:
+        car['lane'] = lane_fn(car)
+        speed = compute_speed(car, valid_meas_fn, project_fn, scales)
+        if speed is not None:
+            car['speed'] = speed
+            valid_cars.append(car)
+
+    matched_gt_cars = match_cars(gt_cars, valid_cars, verbose=verbose)
+
+    if verbose:
+        errors = [gt_car['speed'] - gt_car['match']['speed'] for gt_car in matched_gt_cars if gt_car['matched']]
+        correct = ((errors < 2) & (errors > -3)).sum()
+
+        print("Recall: {}".format(len(errors) / len(matched_gt_cars)))
+        print("Correct from matched: {}".format(correct / len(errors)))
+        print("Correct from all: {}".format(correct / len(matched_gt_cars)))
+
+    return matched_gt_cars
 
 
 if __name__ == "__main__":
-    res_dir = 'D:/Skola/PhD/data/LuvizonDataset/results/'
+    results_path = 'D:/Skola/PhD/data/LuvizonDataset/results/'
     # vid_dir = '/home/k/kocur15/data/luvizon/videos/'
 
-    name = 'Transform3D_960_540_VP2VP3'
+    if os.name == 'nt':
+        vid_path = 'D:/Skola/PhD/data/LuvizonDataset/dataset/'
+        results_path = 'D:/Skola/PhD/data/LuvizonDataset/results/'
+    else:
+        vid_path = '/home/k/kocur15/data/luvizon/dataset/'
+        results_path = '/home/k/kocur15/data/luvizon/results/'
 
-    for i in range(1, 6):
-        result_dir = os.path.join(res_dir, 'Set0{}'.format(i))
-        test_video(result_dir, name)
+    vid_dict = {1: [1, 2], 2: [1, 2, 3, 4, 5, 6], 3: [1], 4: [1], 5: [1]}
+    name = 'system_Transform3D_BCL_0.5_960_540_VP2VP3.json'
+    # name = 'system_Transform3D_BCL_0.3_640_360_VP2VP3.json'
+
+    # name = 'system_Transform3D_960_540_VP2VP3.json'
+    # vid_dict = {1: [1, 2, 3, 4], 2: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 3: [1, 2], 4: [1, 2], 5: [1]}
+
+    calib_list = []
+    gt_list = []
+
+    for i in vid_dict.keys():
+        gt_list.extend([os.path.join(vid_path, 'subset0{}'.format(i), 'video{:02d}'.format(j)) for j in vid_dict[i]])
+        calib_list.extend(
+            [os.path.join(results_path, 'subset0{}'.format(i), 'video{:02d}'.format(j), name) for j in vid_dict[i]])
+
+    init_results = []
+    init_scales = [1.0] * 3
+
+    for calib, gt in zip(calib_list, gt_list):
+        init_results.append(test_video(calib, gt, init_scales))
+
+    gt_sum = np.array([0, 0, 0], dtype=np.float64)
+    meas_sum = np.array([0, 0, 0], dtype=np.float64)
+    n = np.array([0, 0, 0])
+    for result in init_results:
+        for gt_car in result:
+            if gt_car['matched']:
+                n[gt_car['lane'] - 1] += 1
+                gt_sum[gt_car['lane'] - 1] += gt_car['speed']
+                meas_sum[gt_car['lane'] - 1] += gt_car['match']['speed']
+
+    computed_scales = (gt_sum + 0.5 * n) / meas_sum
+    # computed_scales = (gt_sum) / meas_sum
+    print(gt_sum[0]/meas_sum[0])
+    print(computed_scales)
+    # computed_scale = (np.sum(gt_sum) + np.sum(n) * 0.5) / np.sum(meas_sum)
+    # computed_scales = np.repeat(computed_scale, 3)
 
 
-    print(np.median(SCALES))
+    results = []
+    for calib, gt in zip(calib_list, gt_list):
+        results.extend(test_video(calib, gt, computed_scales))
+
+    errors = np.array([gt_car['speed'] - gt_car['match']['speed'] for gt_car in results if gt_car['matched']])
+    correct = ((errors < 2) & (errors > -3)).sum()
+
+    print("Recall: {}".format(len(errors) / len(results)))
+    print("Correct from matched: {}".format(correct / len(errors)))
+    print("Correct from all: {}".format(correct / len(results)))
+    print("Mean: {}".format(np.nanmean(errors)))
+    print("Median: {}".format(np.nanmedian(errors)))
+    print("STD: {}".format(np.nanstd(errors)))
+

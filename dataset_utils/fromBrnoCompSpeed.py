@@ -61,7 +61,7 @@ class InferenceConfig(coco.CocoConfig):
     # Set batch size to 1 since we'll be running inference on
     # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
     GPU_COUNT = 1
-    IMAGES_PER_GPU = 2
+    IMAGES_PER_GPU = 8
     DETECTION_MIN_CONFIDENCE = 0.5
 
 class BCS_boxer(object):
@@ -251,7 +251,6 @@ class BCS_boxer(object):
             t_images = []
             for _ in range(InferenceConfig.IMAGES_PER_GPU):
                 for _ in range(self.n):
-                    self.pos += 1
                     ret, frame = cap.read()
                     if not ret:
                         break
@@ -292,7 +291,7 @@ class BCS_boxer(object):
                         pickle.dump(self.entries, f)
                         print("Saving, vid:{}, pos:{}".format(self.vid,self.pos))
 
-                self.pos += 1
+                self.pos += self.n
 
         with open(self.pkl_path, "wb") as f:
             pickle.dump(self.entries, f)
@@ -355,15 +354,16 @@ if __name__ == '__main__':
 
 
     vid_list = []
-    calib_list = []
     for i in vid_dict.keys():
         vid_list.extend([os.path.join(vid_path, 'subset{:02d}'.format(i), 'video{:02d}'.format(j), 'video.h264') for j in vid_dict[i]])
-        calib_list.extend([os.path.join(results_path, 'subset{:02d}'.format(i), 'video{:02d}'.format(j), 'calib.json') for j in vid_dict[i]])
+
+    calib_path = os.path.join(results_path, 'subset01', 'video01', 'calib.json')
+    calib_list = [calib_path for _ in vid_list]
 
     pkl_path = os.path.join(ds_path, 'dataset_9.pkl')
     image_path = os.path.join(ds_path, 'images_9')
 
-    boxer = BCS_boxer(model, vid_list, calib_list, pkl_path, image_path, 960, 540, save_often = True, n = 25)
+    boxer = BCS_boxer(model, vid_list, calib_list, pkl_path, image_path, 960, 540, save_often = True, n = 15)
     boxer.process()
 
     # vid_list = [os.path.join(vid_path, d, 'video.avi') for d in dir_list]

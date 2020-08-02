@@ -33,7 +33,7 @@ from keras import backend as K
 
 import keras_retinanet.models
 
-TIMEOUT = 2000
+TIMEOUT = 20
 
 
 def draw_raw_output(images, y_pred, threshold=0.5, cnt=None):
@@ -354,8 +354,8 @@ if __name__ == "__main__":
         vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
         results_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/results/'
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    #
+    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+
     # import tensorflow as tf
     # from keras import backend as k
     # config = tf.ConfigProto()
@@ -381,10 +381,19 @@ if __name__ == "__main__":
 
     # sample vid_dict
     vid_dict = {1: [1], 2: [1], 3: [1], 4: [1], 5: [1]}
+    # test vid_dict
+    vid_dict = {1: [1, 2], 2: [1, 2, 3, 4, 5, 6], 3: [1], 4: [1], 5: [1]}
+    vid_dict = {2: [6]}
+    # full vid_dict:
+    # vid_dict = {1: [1, 2, 3, 4], 2: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 3: [1, 2], 4: [1, 2], 5: [1]}
+
 
     for i in vid_dict.keys():
         vid_list.extend([os.path.join(vid_path, 'subset0{}'.format(i), 'video{:02d}'.format(j), 'video.h264') for j in vid_dict[i]])
         calib_list.extend([os.path.join(results_path, 'subset0{}'.format(i), 'video{:02d}'.format(j), 'calib.json') for j in vid_dict[i]])
+
+    # calib_path = os.path.join(results_path, 'subset01', 'video01', 'calib.json')
+    # calib_list = [calib_path for _ in vid_list]
 
     # if os.name == 'nt':
     #     vid_dir = 'D:/Skola/PhD/data/DETRAC/Insight-MVT_Annotation_Test/'
@@ -397,36 +406,38 @@ if __name__ == "__main__":
 
 
     pair = '23'
-    width = 640
-    height = 360
-    name = '{}_{}_{}_3'.format(width, height, pair)
+    width = 960
+    height = 540
+    name = 'BC+luvizon_{}_{}_{}_0'.format(width, height, pair)
 
-    if os.name =='nt':
-        model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_{}_at30.h5'.format(name),
-                                                  backbone_name='resnet50', convert=False)
-    else:
-        model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}_at30.h5'.format(name, name),
-                                                  backbone_name='resnet50', convert=False)
-
-    print(model.summary)
-    model._make_predict_function()
-
-    for vid, calib in zip(vid_list, calib_list):
-        test_video(model, vid, calib, width, height, 4, name, pair, online=True, fake=False)# out_path='D:/Skola/PhD/code/keras-retinanet/video_results/center_6_12.avi')
-
-    thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-    thresholds = [0.10, 0.12, 0.14, 0.16, 0.18, 0.20, 0.22, 0.24, 0.26, 0.28, 0.30]
-    thresholds = [0.2]
-
-    # name = '{}_{}_{}_1'.format(width, height, pair)
-    # write_name = 'Transform3D_960_540_VP2VP3'
+    # if os.name =='nt':
+    #     model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_{}.h5'.format(name),
+    #                                               backbone_name='resnet50', convert=False)
+    # else:
+    #     model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}.h5'.format(name, name),
+    #                                               backbone_name='resnet50', convert=False)
     #
-    # for calib, vid in zip(calib_list, vid_list):
-    #     track_detections(calib, vid, pair, width, height, name, 0.2, fake = False, keep=5, write_name=write_name)
+    # print(model.summary)
+    # model._make_predict_function()
+    #
+    # for vid, calib in zip(vid_list, calib_list):
+    #     test_video(model, vid, calib, width, height, 16, name, pair, online=False, fake=False)# out_path='D:/Skola/PhD/code/keras-retinanet/video_results/center_6_12.avi')
 
-    test_dataset('D:/Skola/PhD/data/Luvizon_boxed_23/images_0', 'D:/Skola/PhD/data/Luvizon_boxed_23/dataset_0.pkl',
-                 'D:/Skola/PhD/data/LuvizonDataset/results/Set01/calib.json',
-                 960, 540, pair='23')
+    thresholds = [0.3, 0.4, 0.5]
+    # thresholds = [0.10, 0.12, 0.14, 0.16, 0.18, 0.20, 0.22, 0.24, 0.26, 0.28, 0.30]
+    # thresholds = [0.5]
+
+    # name = '{}_{}_{}_0'.format(width, height, pair)
+    # write_name = 'Transform3D_BCL_640_360_VP2VP3'
+    # #
+    for t in thresholds:
+        write_name = 'Transform3D_BCL_{}_960_540_VP2VP3'.format(t)
+        for calib, vid in zip(calib_list, vid_list):
+            track_detections(calib, vid, pair, width, height, name, t, fake = False, keep=10, write_name=write_name)
+
+    # test_dataset('D:/Skola/PhD/data/Luvizon_boxed_23/images_0', 'D:/Skola/PhD/data/Luvizon_boxed_23/dataset_0.pkl',
+    #              'D:/Skola/PhD/data/LuvizonDataset/results/Set01/calib.json',
+    #              960, 540, pair='23')
 
     # if os.name == 'nt':
     #     write_path = 'D:/Skola/PhD/data/DETRAC/Transform3D'
