@@ -15,6 +15,7 @@ from dataset_utils.warper import warp_point
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 import keras_retinanet.bin  # noqa: F401
+
 __package__ = "keras_retinanet.bin"
 
 from ..utils.compute_overlap import compute_overlap
@@ -23,7 +24,8 @@ font = cv2.FONT_HERSHEY_SIMPLEX
 
 
 class Tracker:
-    def __init__(self, json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, threshold = 0.7, pair='23', keep=5, compare = False, fake = False, write_name = None, save_often = True):
+    def __init__(self, json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, threshold=0.7, pair='23', keep=5,
+                 compare=False, fake=False, write_name=None, save_often=True):
         self.detrac_detection_strings = []
         self.tracks = []
         self.assigned = []
@@ -56,19 +58,19 @@ class Tracker:
             self.write_name = self.name
         else:
             self.write_name = write_name
-        self.write_path = os.path.join(os.path.dirname(json_path),'system_{}.json'.format(self.write_name, self.threshold*100))
-        self.read_path = os.path.join(os.path.dirname(json_path),'detections_{}.json'.format(self.name))
+        self.write_path = os.path.join(os.path.dirname(json_path),
+                                       'system_{}.json'.format(self.write_name, self.threshold * 100))
+        self.read_path = os.path.join(os.path.dirname(json_path), 'detections_{}.json'.format(self.name))
         self.compare = compare
         self.fake = fake
 
         with open(json_path, 'r+') as file:
-        # with open(os.path.join(os.path.dirname(json_path), 'system_retinanet_first.json'), 'r+') as file:
+            # with open(os.path.join(os.path.dirname(json_path), 'system_retinanet_first.json'), 'r+') as file:
             structure = json.load(file)
             if self.compare:
                 self.dubska_cars = structure['cars']
-            self.json_structure = {'cars':[], 'camera_calibration':structure['camera_calibration']}
+            self.json_structure = {'cars': [], 'camera_calibration': structure['camera_calibration']}
         # self.json_structure = {'cars': []}
-
 
     def draw_box(self, box, id, image_b):
         bb_tt, center = self.get_bb(box)
@@ -218,42 +220,42 @@ class Tracker:
                 bb_tt = [point[0] for point in bb_tt]
                 center = (bb_tt[2] + bb_tt[3]) / 2
         # else:
-            # if xmax < self.vp1_t[0]:
-            #     if cy_0 < self.vp1_t[1]:
-            #         cx, cy = intersection(line([xmin, ymin], [xmin + 1, ymin]), line([xmax, cy_0], self.vp1_t))
-            #         bb_t.append([xmin, ymin])
-            #         bb_t.append([cx, ymin])
-            #         bb_t.append([cx, ymax])
-            #         bb_t.append([xmin, ymax])
-            #         bb_t.append(intersection(line(bb_t[0], self.vp1_t), line([xmax, cy_0] , [xmax + 1, cy_0])))
-            #         bb_t.append(intersection(line(bb_t[1], self.vp1_t), line([xmax, cy_0] , [xmax + 1, cy_0])))
-            #         bb_t.append(intersection(line(bb_t[2], self.vp1_t), line([xmax, ymax] , [xmax, ymax + 1])))
-            #         bb_t.append(intersection(line(bb_t[3], self.vp1_t), line(bb_t[4] , [bb_t[4][0], bb_t[4][1] + 1])))
-            #
-            #         bb_t_array = np.array([[point] for point in bb_t], np.float32)
-            #         bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
-            #         bb_tt = [point[0] for point in bb_tt]
-            #         center = (bb_tt[2] + bb_tt[3]) / 2
-            #     else:
-            #         cx, cy = intersection(line([xmin, ymax], [xmin + 1, ymax]), line([xmax, cy_0], self.vp1_t))
-            #         bb_t.append([xmin, ymin])
-            #         bb_t.append([cx, ymin])
-            #         bb_t.append([cx, ymax])
-            #         bb_t.append([xmin, ymax])
-            #         tx, ty = intersection(line([cx, ymin], self.vp1_t), line([xmax, ymin], [xmax, ymin + 1]))
-            #
-            #         bb_t.append(intersection(line(bb_t[0], self.vp1_t), line([tx, ty] , [tx + 1, ty])))
-            #         bb_t.append([tx, ty])
-            #         bb_t.append(intersection(line(bb_t[2], self.vp1_t), line([xmax, ymax] , [xmax, ymax + 1])))
-            #         bb_t.append(intersection(line(bb_t[3], self.vp1_t), line(bb_t[4] , [bb_t[4][0], bb_t[4][1] + 1])))
-            #
-            #         bb_t_array = np.array([[point] for point in bb_t], np.float32)
-            #         bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
-            #         bb_tt = [point[0] for point in bb_tt]
-            #         center = (bb_tt[2] + bb_tt[3]) / 2
-            # # elif xmin > self.vp1_t[0]:
-            # #             #     ...
-            # else:
+        # if xmax < self.vp1_t[0]:
+        #     if cy_0 < self.vp1_t[1]:
+        #         cx, cy = intersection(line([xmin, ymin], [xmin + 1, ymin]), line([xmax, cy_0], self.vp1_t))
+        #         bb_t.append([xmin, ymin])
+        #         bb_t.append([cx, ymin])
+        #         bb_t.append([cx, ymax])
+        #         bb_t.append([xmin, ymax])
+        #         bb_t.append(intersection(line(bb_t[0], self.vp1_t), line([xmax, cy_0] , [xmax + 1, cy_0])))
+        #         bb_t.append(intersection(line(bb_t[1], self.vp1_t), line([xmax, cy_0] , [xmax + 1, cy_0])))
+        #         bb_t.append(intersection(line(bb_t[2], self.vp1_t), line([xmax, ymax] , [xmax, ymax + 1])))
+        #         bb_t.append(intersection(line(bb_t[3], self.vp1_t), line(bb_t[4] , [bb_t[4][0], bb_t[4][1] + 1])))
+        #
+        #         bb_t_array = np.array([[point] for point in bb_t], np.float32)
+        #         bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
+        #         bb_tt = [point[0] for point in bb_tt]
+        #         center = (bb_tt[2] + bb_tt[3]) / 2
+        #     else:
+        #         cx, cy = intersection(line([xmin, ymax], [xmin + 1, ymax]), line([xmax, cy_0], self.vp1_t))
+        #         bb_t.append([xmin, ymin])
+        #         bb_t.append([cx, ymin])
+        #         bb_t.append([cx, ymax])
+        #         bb_t.append([xmin, ymax])
+        #         tx, ty = intersection(line([cx, ymin], self.vp1_t), line([xmax, ymin], [xmax, ymin + 1]))
+        #
+        #         bb_t.append(intersection(line(bb_t[0], self.vp1_t), line([tx, ty] , [tx + 1, ty])))
+        #         bb_t.append([tx, ty])
+        #         bb_t.append(intersection(line(bb_t[2], self.vp1_t), line([xmax, ymax] , [xmax, ymax + 1])))
+        #         bb_t.append(intersection(line(bb_t[3], self.vp1_t), line(bb_t[4] , [bb_t[4][0], bb_t[4][1] + 1])))
+        #
+        #         bb_t_array = np.array([[point] for point in bb_t], np.float32)
+        #         bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
+        #         bb_tt = [point[0] for point in bb_tt]
+        #         center = (bb_tt[2] + bb_tt[3]) / 2
+        # # elif xmin > self.vp1_t[0]:
+        # #             #     ...
+        # else:
         # bb_t = []
         # bb_t.append([xmin, ymin])
         # bb_t.append([xmax, ymin])
@@ -296,7 +298,7 @@ class Tracker:
                 cx, cy = intersection(line([xmin, ymin], self.vp1_t), line([0, cy_0], [1, cy_0]))
                 bb_t.append([xmax, ymax])
                 bb_t.append([cx, ymax])
-            else: # vp1_t[0] > xmax
+            else:  # vp1_t[0] > xmax
                 cx, cy = intersection(line([xmax, ymin], self.vp1_t), line([0, cy_0], [1, cy_0]))
                 bb_t.append([cx, ymax])
                 bb_t.append([xmin, ymax])
@@ -321,7 +323,7 @@ class Tracker:
         bb_t_array = np.array([[point] for point in bb_t], np.float32)
         bb_tt = cv2.perspectiveTransform(bb_t_array, self.IM)
         bb_tt = [point[0] for point in bb_tt]
-        center = (bb_tt[0] + bb_tt[1])/2
+        center = (bb_tt[0] + bb_tt[1]) / 2
         return center
 
     def process(self, boxes, image):
@@ -334,7 +336,7 @@ class Tracker:
             if box[0] < self.threshold:
                 continue
             track = self.get_track(box)
-            image_b, center = self.draw_box(box,track.id,image_b)
+            image_b, center = self.draw_box(box, track.id, image_b)
             track.assign_center(center)
         self.remove()
 
@@ -418,7 +420,7 @@ class Tracker:
                 max_track = track
         if max_track is None:
             self.last_id += 1
-            new_track = self.Track(box,self.last_id, self.frame)
+            new_track = self.Track(box, self.last_id, self.frame)
             self.tracks.append(new_track)
             return new_track
         else:
@@ -460,13 +462,13 @@ class Tracker:
         if len(frames) < 5:
             return
 
-        dist = math.sqrt(math.pow(posX[0] - posX[-1],2) + math.pow(posY[0] - posY[-1],2))
+        dist = math.sqrt(math.pow(posX[0] - posX[-1], 2) + math.pow(posY[0] - posY[-1], 2))
         if dist > 30:
-            entry = {'frames':track.frames, 'id': track.id, 'posX': posX, 'posY': posY}
+            entry = {'frames': track.frames, 'id': track.id, 'posX': posX, 'posY': posY}
             self.json_structure['cars'].append(entry)
 
     def write(self):
-        with open(self.write_path,'w') as file:
+        with open(self.write_path, 'w') as file:
             json.dump(self.json_structure, file)
 
     class Track:
@@ -481,7 +483,7 @@ class Tracker:
 
         def iou(self, box):
             last_box = self.boxes[-1][np.newaxis, 1:5].astype(np.float64)
-            query_box = box[np.newaxis,1:5].astype(np.float64)
+            query_box = box[np.newaxis, 1:5].astype(np.float64)
 
             return compute_overlap(last_box, query_box)
 
@@ -503,8 +505,7 @@ class Tracker:
                 idx = car["frames"].index(self.frame)
                 posX = car["posX"][idx]
                 posY = car["posY"][idx]
-                image_b = cv2.circle(image_b, (int(posX), int(posY)), 5, (255,0,0), 3)
+                image_b = cv2.circle(image_b, (int(posX), int(posY)), 5, (255, 0, 0), 3)
             except:
                 pass
         return image_b
-

@@ -43,10 +43,10 @@ class KittiGenerator(Generator):
     """
 
     def __init__(
-        self,
-        base_dir,
-        subset='train',
-        **kwargs
+            self,
+            base_dir,
+            subset='train',
+            **kwargs
     ):
         """ Initialize a KITTI data generator.
 
@@ -97,7 +97,8 @@ class KittiGenerator(Generator):
                     label = row['type']
                     cls_id = kitti_classes[label]
 
-                    annotation = {'cls_id': cls_id, 'x1': row['left'], 'x2': row['right'], 'y2': row['bottom'], 'y1': row['top']}
+                    annotation = {'cls_id': cls_id, 'x1': row['left'], 'x2': row['right'], 'y2': row['bottom'],
+                                  'y1': row['top']}
                     boxes.append(annotation)
 
                 self.image_data[i] = boxes

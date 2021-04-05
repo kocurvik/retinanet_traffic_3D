@@ -58,9 +58,9 @@ def get_vp1(cap, mask, debug=False):
     vp = acc.get_vp()
     return vp
 
-def get_vp2(vp1, cap, mask, skip=10, debug=False):
 
-    pp = [mask.shape[1]/2 + 0.5, mask.shape[0]/2 + 0.5]
+def get_vp2(vp1, cap, mask, skip=10, debug=False):
+    pp = [mask.shape[1] / 2 + 0.5, mask.shape[0] / 2 + 0.5]
 
     mask_reduced = cv2.erode(mask, element_big)
 
@@ -92,7 +92,7 @@ def get_vp2(vp1, cap, mask, skip=10, debug=False):
             mag = np.sqrt(sobel_x ** 2 + sobel_y ** 2)
             # mag = mag / np.max(mag)
 
-            #apply mask to image
+            # apply mask to image
             # gray = cv2.bitwise_and(mag, mag, mask=255*fg_mask.astype(np.uint8))
 
             mag_dilated = cv2.dilate(mag, element_loc_max)
@@ -102,7 +102,8 @@ def get_vp2(vp1, cap, mask, skip=10, debug=False):
             non_plateaus = cv2.compare(local_maxima, l_m_eroded, cmpop=cv2.CMP_GT)
             local_maxima_cleaned = cv2.bitwise_and(non_plateaus, local_maxima)
 
-            seeds = np.logical_and(np.logical_and(np.logical_and(local_maxima_cleaned > 0, fg_mask > 0), mag > 450), mask_reduced > 0)
+            seeds = np.logical_and(np.logical_and(np.logical_and(local_maxima_cleaned > 0, fg_mask > 0), mag > 450),
+                                   mask_reduced > 0)
             seeds_idx = np.argwhere(seeds)
 
             a_list = []
@@ -114,9 +115,9 @@ def get_vp2(vp1, cap, mask, skip=10, debug=False):
                 i, j = seed
                 if 5 > i or i > frame.shape[0] - 5 or 5 > j or j > frame.shape[1] - 5:
                     continue
-                window_x = sobel_x[i-4:i+5, j-4:j+5]
-                window_y = sobel_y[i-4:i+5, j-4:j+5]
-                matrix = np.column_stack([np.reshape(window_x, [81,1]), np.reshape(window_y, [81, 1])])
+                window_x = sobel_x[i - 4:i + 5, j - 4:j + 5]
+                window_y = sobel_y[i - 4:i + 5, j - 4:j + 5]
+                matrix = np.column_stack([np.reshape(window_x, [81, 1]), np.reshape(window_y, [81, 1])])
                 u, s, v = np.linalg.svd(matrix.T @ matrix)
                 q = s[0] / s[1]
                 d = u[:, 0]
@@ -125,7 +126,7 @@ def get_vp2(vp1, cap, mask, skip=10, debug=False):
                     continue
 
                 n_vp = vp1 - np.flip(seed)
-                dot_product = np.dot(n_vp / np.linalg.norm(n_vp), d/np.linalg.norm(d))
+                dot_product = np.dot(n_vp / np.linalg.norm(n_vp), d / np.linalg.norm(d))
                 angle = np.arccos(dot_product)
 
                 if 0.325 * np.pi < angle < 0.625 * np.pi:
@@ -143,9 +144,10 @@ def get_vp2(vp1, cap, mask, skip=10, debug=False):
                 # p.append([seed[1] - d[1], seed[0] + d[0], seed[1] + d[1], seed[0] - d[0]])
 
                 if debug:
-                    d = d/np.linalg.norm(d)
+                    d = d / np.linalg.norm(d)
                     # print("Edgelet s:{}, q:{}, d:{}".format(seed, q, d))
-                    frame = cv2.line(frame, (int(seed[1] - 10 * d[1]), int(seed[0] + 10 * d[0])), (int(seed[1] + 10 * d[1]), int(seed[0] - 10 * d[0])), (0, 255, 0), 1)
+                    frame = cv2.line(frame, (int(seed[1] - 10 * d[1]), int(seed[0] + 10 * d[0])),
+                                     (int(seed[1] + 10 * d[1]), int(seed[0] - 10 * d[0])), (0, 255, 0), 1)
 
             acc.accumulate_abc_lines(np.array(a_list), np.array(b_list), np.array(c_list))
             # acc.accumulate_xy_lines(np.array(p))
@@ -190,11 +192,12 @@ def calib_video(video_path, calib_path=None, debug=False, out_path=None):
     print("Detected vp2: {}".format(vp2))
 
     if out_path is not None:
-        pp = [mask.shape[1]/2 + 0.5, mask.shape[0]/2 + 0.5]
+        pp = [mask.shape[1] / 2 + 0.5, mask.shape[0] / 2 + 0.5]
         camera_calibration = {'vp1': vp1, 'vp2': vp2, 'pp': pp}
         json_structure = {'cars': [], 'camera_calibration': camera_calibration}
-        with open(out_path,'w') as file:
+        with open(out_path, 'w') as file:
             json.dump(json_structure, file)
+
 
 if __name__ == "__main__":
     # vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
@@ -212,7 +215,8 @@ if __name__ == "__main__":
     #     test_video(v, c)
 
     vid_dir = 'D:/Skola/PhD/data/DETRAC/Insight-MVT_Annotation_Test/'
-    vids = ['MVI_39031', 'MVI_39051','MVI_39211', 'MVI_39271', 'MVI_39371', 'MVI_39501', 'MVI_39511', 'MVI_40742', 'MVI_40743', 'MVI_40863', 'MVI_40864']
+    vids = ['MVI_39031', 'MVI_39051', 'MVI_39211', 'MVI_39271', 'MVI_39371', 'MVI_39501', 'MVI_39511', 'MVI_40742',
+            'MVI_40743', 'MVI_40863', 'MVI_40864']
     # vids = ['MVI_40742', 'MVI_40743']
 
     vid_list = [os.path.join(vid_dir, v) for v in vids]

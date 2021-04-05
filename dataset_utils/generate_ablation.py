@@ -4,8 +4,7 @@ import os
 import cv2
 
 
-# Script to generate the dataset from BoxCars116k
-# for Transform2D and Transform3D approaches from the paper
+# Script to generate the dataset from BoxCars116k for Transform2D and Transform3D approaches from the paper
 
 def generate_ablation_dataset(dataset_path, images_path, t_dataset_path, t_images_path, im_w, im_h):
     with open(dataset_path, "rb") as f:
@@ -35,7 +34,7 @@ def generate_ablation_dataset(dataset_path, images_path, t_dataset_path, t_image
             xs = (im_w / float(image.shape[1])) * xs
             ys = (im_h / float(image.shape[0])) * ys
 
-            t_image = cv2.resize(image, (im_w,im_h))
+            t_image = cv2.resize(image, (im_w, im_h))
 
             # # remove later
             if not os.path.exists(os.path.dirname(targetpath)):
@@ -64,8 +63,10 @@ if __name__ == "__main__":
     #                         'C:/datasets/BoxCars116k/dataset_ablation.pkl', 'C:/datasets/BoxCars116k/images_ablation/', 320,
     #                         180)
 
-    generate_ablation_dataset('/home/k/kocur15/data/BoxCars116k/dataset.pkl', '/home/k/kocur15/data/BoxCars116k/images/',
-                            '/home/k/kocur15/data/BoxCars116k/dataset_ablation.pkl', '/home/k/kocur15/data/BoxCars116k/images_ablation/', 320, 180)
+    generate_ablation_dataset('/home/k/kocur15/data/BoxCars116k/dataset.pkl',
+                              '/home/k/kocur15/data/BoxCars116k/images/',
+                              '/home/k/kocur15/data/BoxCars116k/dataset_ablation.pkl',
+                              '/home/k/kocur15/data/BoxCars116k/images_ablation/', 320, 180)
 
     # generate_warped_dataset('C:/datasets/BoxCars116k/dataset.pkl', 'C:/datasets/BoxCars116k/images/',
     #                         'C:/datasets/BoxCars116k/lol.pkl', 'C:/datasets/BoxCars116k/images_warped2/', 100,

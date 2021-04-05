@@ -33,7 +33,6 @@ def read_image_bgr(path):
     return image[:, :, ::-1].copy()
 
 
-
 def preprocess_image(x, mode='caffe'):
     """ Preprocess an image by subtracting the ImageNet mean.
 
@@ -102,17 +101,18 @@ class TransformParameters:
         relative_translation:  If true (the default), interpret translation as a factor of the image size.
                                If false, interpret it as absolute pixels.
     """
+
     def __init__(
-        self,
-        fill_mode            = 'nearest',
-        interpolation        = 'linear',
-        cval                 = 0,
-        data_format          = None,
-        relative_translation = True,
+            self,
+            fill_mode='nearest',
+            interpolation='linear',
+            cval=0,
+            data_format=None,
+            relative_translation=True,
     ):
-        self.fill_mode            = fill_mode
-        self.cval                 = cval
-        self.interpolation        = interpolation
+        self.fill_mode = fill_mode
+        self.cval = cval
+        self.interpolation = interpolation
         self.relative_translation = relative_translation
 
         if data_format is None:
@@ -124,7 +124,8 @@ class TransformParameters:
         elif data_format == 'channels_last':
             self.channel_axis = 2
         else:
-            raise ValueError("invalid data_format, expected 'channels_first' or 'channels_last', got '{}'".format(data_format))
+            raise ValueError(
+                "invalid data_format, expected 'channels_first' or 'channels_last', got '{}'".format(data_format))
 
     def cvBorderMode(self):
         if self.fill_mode == 'constant':
@@ -169,10 +170,10 @@ def apply_transform(matrix, image, params):
     output = cv2.warpAffine(
         image,
         matrix[:2, :],
-        dsize       = (image.shape[1], image.shape[0]),
-        flags       = params.cvInterpolation(),
-        borderMode  = params.cvBorderMode(),
-        borderValue = params.cval,
+        dsize=(image.shape[1], image.shape[0]),
+        flags=params.cvInterpolation(),
+        borderMode=params.cvBorderMode(),
+        borderValue=params.cval,
     )
 
     if params.channel_axis != 2:

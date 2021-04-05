@@ -41,7 +41,7 @@ class DenseNetBackbone(Backbone):
         For more info check the explanation from the keras densenet script itself:
             https://github.com/keras-team/keras/blob/master/keras/applications/densenet.py
         """
-        origin    = 'https://github.com/fchollet/deep-learning-models/releases/download/v0.8/'
+        origin = 'https://github.com/fchollet/deep-learning-models/releases/download/v0.8/'
         file_name = '{}_weights_tf_dim_ordering_tf_kernels_notop.h5'
 
         # load weights
@@ -57,7 +57,8 @@ class DenseNetBackbone(Backbone):
         backbone = self.backbone.split('_')[0]
 
         if backbone not in allowed_backbones:
-            raise ValueError('Backbone (\'{}\') not in allowed backbones ({}).'.format(backbone, allowed_backbones.keys()))
+            raise ValueError(
+                'Backbone (\'{}\') not in allowed backbones ({}).'.format(backbone, allowed_backbones.keys()))
 
     def preprocess_image(self, inputs):
         """ Takes as input an image and prepares it for being passed through the network.
@@ -85,7 +86,8 @@ def densenet_retinanet(num_classes, backbone='densenet121', inputs=None, modifie
     backbone = densenet.DenseNet(blocks=blocks, input_tensor=inputs, include_top=False, pooling=None, weights=None)
 
     # get last conv layer from the end of each dense block
-    layer_outputs = [backbone.get_layer(name='conv{}_block{}_concat'.format(idx + 2, block_num)).output for idx, block_num in enumerate(blocks)]
+    layer_outputs = [backbone.get_layer(name='conv{}_block{}_concat'.format(idx + 2, block_num)).output for
+                     idx, block_num in enumerate(blocks)]
 
     # create the densenet backbone
     backbone = keras.models.Model(inputs=inputs, outputs=layer_outputs[1:], name=backbone.name)

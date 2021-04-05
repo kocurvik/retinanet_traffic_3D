@@ -77,7 +77,8 @@ class MobileNetBackbone(Backbone):
         backbone = self.backbone.split('_')[0]
 
         if backbone not in MobileNetBackbone.allowed_backbones:
-            raise ValueError('Backbone (\'{}\') not in allowed backbones ({}).'.format(backbone, MobileNetBackbone.allowed_backbones))
+            raise ValueError('Backbone (\'{}\') not in allowed backbones ({}).'.format(backbone,
+                                                                                       MobileNetBackbone.allowed_backbones))
 
     def preprocess_image(self, inputs):
         """ Takes as input an image and prepares it for being passed through the network.

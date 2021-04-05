@@ -5,20 +5,18 @@ import os
 import sys
 import cv2
 
-# Performs the same thing as track_detections in test.py
-# and simple_test.py, but all in one place.
+# Performs the same thing as track_detections in test.py and simple_test.py, but all in one place.
 
 if __name__ == "__main__" and __package__ is None:
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..' ))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     print(sys.path)
-
 
 from dataset_utils.tracker import Tracker
 from dataset_utils.warper import get_transform_matrix_with_criterion
 from dataset_utils.geometry import computeCameraCalibration
 
 
-def track_detections(json_path, video_path, pair,  im_w, im_h, name, threshold, fake=False, write_name=None, keep=5):
+def track_detections(json_path, video_path, pair, im_w, im_h, name, threshold, fake=False, write_name=None, keep=5):
     print('Tracking: {} for t = {}'.format(name, threshold))
 
     with open(json_path, 'r+') as file:
@@ -39,8 +37,10 @@ def track_detections(json_path, video_path, pair,  im_w, im_h, name, threshold, 
     elif pair == '23':
         M, IM = get_transform_matrix_with_criterion(vp3, vp2, mask, im_w, im_h)
 
-    tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, threshold=threshold, pair = pair, fake=fake, write_name=write_name, keep = keep)
+    tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, threshold=threshold, pair=pair, fake=fake,
+                      write_name=write_name, keep=keep)
     tracker.read()
+
 
 if __name__ == "__main__":
     # vid_path = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset'
@@ -54,22 +54,21 @@ if __name__ == "__main__":
     for i in range(4, 7):
         dir_list = ['session{}_center'.format(i), 'session{}_left'.format(i), 'session{}_right'.format(i)]
         vid_list.extend([os.path.join(vid_path, d) for d in dir_list])
-        calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list])
+        calib_list.extend(
+            [os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list])
 
     cases = []
     cases.append({'width': 480, 'height': 270, 'pair': '23', 'name': '{}_{}_{}_1_at30', 'fake': False})
     cases.append({'width': 640, 'height': 360, 'pair': '23', 'name': '{}_{}_{}_3_at30', 'fake': False})
-    cases.append({'width': 960, 'height': 540, 'pair' :'23', 'name': '{}_{}_{}_1_at30', 'fake': False})
+    cases.append({'width': 960, 'height': 540, 'pair': '23', 'name': '{}_{}_{}_1_at30', 'fake': False})
     cases.append({'width': 270, 'height': 480, 'pair': '12', 'name': '{}_{}_{}_1', 'fake': False})
     cases.append({'width': 360, 'height': 640, 'pair': '12', 'name': '{}_{}_{}_1', 'fake': False})
-    cases.append({'width': 540, 'height': 960, 'pair' :'12', 'name': '{}_{}_{}_1', 'fake': False})
+    cases.append({'width': 540, 'height': 960, 'pair': '12', 'name': '{}_{}_{}_1', 'fake': False})
     cases.append({'width': 640, 'height': 360, 'pair': '23', 'name': '{}_{}_no_centers_{}_0_at30', 'fake': True})
     cases.append({'width': 360, 'height': 640, 'pair': '12', 'name': '{}_{}_no_centers_{}_0_at30', 'fake': True})
     cases.append({'width': 640, 'height': 360, 'pair': '23', 'name': 'mask_ablation', 'fake': False})
 
-
     VP_string = {'12': 'VP1VP2', '23': 'VP2VP3'}
-
 
     write_names = []
     for case in cases:
@@ -91,5 +90,3 @@ if __name__ == "__main__":
 
     print(write_names)
     print(tuple(write_names))
-
-

@@ -8,8 +8,8 @@ import os
 import sys
 import numpy as np
 
-# Script which creates training data from the BrnoCompSpeed dataset
-# for ablation experiment referred to in paper as Orig2D
+# Script which creates training data from the BrnoCompSpeed dataset for ablation experiment referred to in paper as
+# Orig2D
 
 # Requires https://github.com/matterport/Mask_RCNN
 
@@ -56,6 +56,7 @@ class InferenceConfig(coco.CocoConfig):
     GPU_COUNT = 1
     IMAGES_PER_GPU = 1
     DETECTION_MIN_CONFIDENCE = 0.5
+
 
 class BCS_boxer(object):
     def __init__(self, model, vid_list, pkl_path, images_path, im_w, im_h, lastvid=0, lastpos=0, save_often=False, n=0):
@@ -109,7 +110,6 @@ class BCS_boxer(object):
                'y_max': roi[2]}
         return box
 
-
     def process_video(self, vid_path):
         mask = cv2.imread(os.path.join(os.path.dirname(vid_path), 'video_mask.png'), 0)
         cap = cv2.VideoCapture(vid_path)
@@ -137,7 +137,6 @@ class BCS_boxer(object):
 
             r = results[0]
 
-
             for idx in range(len(r['class_ids'])):
                 if r['class_ids'][idx] in self.vehicles:
                     box = self.blob_boxer(r['masks'][:, :, idx], r['rois'][idx])
@@ -147,7 +146,6 @@ class BCS_boxer(object):
                     box['y_max'] = self.im_h * box['y_max'] / 1080
                     boxes.append(box)
 
-
             entry = {'id': self.id(), 'filename': self.filename(), 'labels': boxes}
 
             self.entries.append(entry)
@@ -156,20 +154,20 @@ class BCS_boxer(object):
             if not os.path.exists(os.path.dirname(targetpath)):
                 os.makedirs(os.path.dirname(targetpath))
 
-            t_image = cv2.resize(image,(self.im_w, self.im_h))
+            t_image = cv2.resize(image, (self.im_w, self.im_h))
             cv2.imwrite(targetpath, t_image)
 
-            if self.save_often and self.pos % (1000*self.n) == 0:
+            if self.save_often and self.pos % (1000 * self.n) == 0:
                 with open(self.pkl_path, "wb") as f:
                     pickle.dump(self.entries, f)
-                    print("Saving, vid:{}, pos:{}".format(self.vid,self.pos))
+                    print("Saving, vid:{}, pos:{}".format(self.vid, self.pos))
 
             self.pos += 1
             ret, frame = cap.read()
 
         with open(self.pkl_path, "wb") as f:
             pickle.dump(self.entries, f)
-            print("Saving, vid:{}, pos:{}".format(self.vid,self.pos))
+            print("Saving, vid:{}, pos:{}".format(self.vid, self.pos))
 
         cap.release()
         # cv2.destroyAllWindows()
@@ -203,5 +201,5 @@ if __name__ == '__main__':
     # vid_list = [os.path.join(vid_path, d, 'video.avi') for d in dir_list]
 
     for i in range(4):
-        boxer = BCS_boxer(model, vid_lists[i],  pkl_paths[i], image_paths[i], 960, 540, save_often=True, n = 25)
+        boxer = BCS_boxer(model, vid_lists[i], pkl_paths[i], image_paths[i], 960, 540, save_often=True, n=25)
         boxer.process()

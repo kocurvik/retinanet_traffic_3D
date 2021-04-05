@@ -28,26 +28,26 @@ except ImportError:
     import xml.etree.ElementTree as ET
 
 voc_classes = {
-    'aeroplane'   : 0,
-    'bicycle'     : 1,
-    'bird'        : 2,
-    'boat'        : 3,
-    'bottle'      : 4,
-    'bus'         : 5,
-    'car'         : 6,
-    'cat'         : 7,
-    'chair'       : 8,
-    'cow'         : 9,
-    'diningtable' : 10,
-    'dog'         : 11,
-    'horse'       : 12,
-    'motorbike'   : 13,
-    'person'      : 14,
-    'pottedplant' : 15,
-    'sheep'       : 16,
-    'sofa'        : 17,
-    'train'       : 18,
-    'tvmonitor'   : 19
+    'aeroplane': 0,
+    'bicycle': 1,
+    'bird': 2,
+    'boat': 3,
+    'bottle': 4,
+    'bus': 5,
+    'car': 6,
+    'cat': 7,
+    'chair': 8,
+    'cow': 9,
+    'diningtable': 10,
+    'dog': 11,
+    'horse': 12,
+    'motorbike': 13,
+    'person': 14,
+    'pottedplant': 15,
+    'sheep': 16,
+    'sofa': 17,
+    'train': 18,
+    'tvmonitor': 19
 }
 
 
@@ -73,14 +73,14 @@ class PascalVocGenerator(Generator):
     """
 
     def __init__(
-        self,
-        data_dir,
-        set_name,
-        classes=voc_classes,
-        image_extension='.jpg',
-        skip_truncated=False,
-        skip_difficult=False,
-        **kwargs
+            self,
+            data_dir,
+            set_name,
+            classes=voc_classes,
+            image_extension='.jpg',
+            skip_truncated=False,
+            skip_difficult=False,
+            **kwargs
     ):
         """ Initialize a Pascal VOC data generator.
 
@@ -88,13 +88,14 @@ class PascalVocGenerator(Generator):
             base_dir: Directory w.r.t. where the files are to be searched (defaults to the directory containing the csv_data_file).
             csv_class_file: Path to the CSV classes file.
         """
-        self.data_dir             = data_dir
-        self.set_name             = set_name
-        self.classes              = classes
-        self.image_names          = [l.strip().split(None, 1)[0] for l in open(os.path.join(data_dir, 'ImageSets', 'Main', set_name + '.txt')).readlines()]
-        self.image_extension      = image_extension
-        self.skip_truncated       = skip_truncated
-        self.skip_difficult       = skip_difficult
+        self.data_dir = data_dir
+        self.set_name = set_name
+        self.classes = classes
+        self.image_names = [l.strip().split(None, 1)[0] for l in
+                            open(os.path.join(data_dir, 'ImageSets', 'Main', set_name + '.txt')).readlines()]
+        self.image_extension = image_extension
+        self.skip_truncated = skip_truncated
+        self.skip_difficult = skip_difficult
 
         self.labels = {}
         for key, value in self.classes.items():
@@ -125,7 +126,7 @@ class PascalVocGenerator(Generator):
     def image_aspect_ratio(self, image_index):
         """ Compute the aspect ratio for an image with image_index.
         """
-        path  = os.path.join(self.data_dir, 'JPEGImages', self.image_names[image_index] + self.image_extension)
+        path = os.path.join(self.data_dir, 'JPEGImages', self.image_names[image_index] + self.image_extension)
         image = Image.open(path)
         return float(image.width) / float(image.height)
 
@@ -148,7 +149,7 @@ class PascalVocGenerator(Generator):
         box = np.zeros((1, 5))
         box[0, 4] = self.name_to_label(class_name)
 
-        bndbox    = _findNode(element, 'bndbox')
+        bndbox = _findNode(element, 'bndbox')
         box[0, 0] = _findNode(bndbox, 'xmin', 'bndbox.xmin', parse=float) - 1
         box[0, 1] = _findNode(bndbox, 'ymin', 'bndbox.ymin', parse=float) - 1
         box[0, 2] = _findNode(bndbox, 'xmax', 'bndbox.xmax', parse=float) - 1

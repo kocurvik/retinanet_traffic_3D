@@ -29,10 +29,10 @@ from dataset_utils.writer import Writer
 from dataset_utils.warper import get_transform_matrix, get_transform_matrix_with_criterion
 from dataset_utils.geometry import line, intersection, computeCameraCalibration
 
-
 ROOT_DIR = os.getcwd()
 MODEL_DIR = os.path.join(ROOT_DIR, "logs")
 IMAGE_DIR = os.path.join(ROOT_DIR, "images")
+
 
 class InferenceConfig(coco.CocoConfig):
     # Set batch size to 1 since we'll be running inference on
@@ -190,7 +190,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, out_path=N
                     cap.release()
                     continue
                 image = cv2.bitwise_and(frame, frame, mask=mask)
-                images.append(image[:,:,::-1])
+                images.append(image[:, :, ::-1])
             # print("Read FPS: {}".format(batch / (time.time() - read_time)))
             q_images.put(images)
 
@@ -214,7 +214,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, out_path=N
             print("GPU FPS: {}".format(batch / (time.time() - gpu_time)))
 
     def postprocess():
-        tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, pair = '23', threshold=0.2)
+        tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, pair='23', threshold=0.2)
         counter = 0
         total_time = time.time()
         while not e_stop.isSet():
@@ -232,7 +232,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, out_path=N
                     out.write(image_b)
                 cv2.imshow('frame', image_b)
                 counter += 1
-                cv2.imwrite('frames/frame_{}_{}_{}.png'.format(vid_name, name, counter),image_b)
+                cv2.imwrite('frames/frame_{}_{}_{}.png'.format(vid_name, name, counter), image_b)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     e_stop.set()
             # break
@@ -256,7 +256,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, out_path=N
                 writer.process(boxes)
                 frame_cnt += 1
             # print("Total FPS: {}".format(batch / (time.time() - total_time)))
-            print("Video: {} at frame: {}, FPS: {}".format(vid_name, frame_cnt, frame_cnt / (time.time()-total_time)))
+            print("Video: {} at frame: {}, FPS: {}".format(vid_name, frame_cnt, frame_cnt / (time.time() - total_time)))
             # total_time = time.time()
 
     inferencer = Thread(target=inference)
@@ -281,7 +281,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, out_path=N
 
 
 def track_detections(json_path, video_path, im_w, im_h, name, threshold):
-    print('Tracking: {} for t = {}'.format(name,threshold))
+    print('Tracking: {} for t = {}'.format(name, threshold))
 
     with open(json_path, 'r+') as file:
         structure = json.load(file)
@@ -299,7 +299,7 @@ def track_detections(json_path, video_path, im_w, im_h, name, threshold):
     frame = np.zeros([1080, 1920])
     M, IM = get_transform_matrix_with_criterion(vp3, vp2, mask, im_w, im_h)
 
-    tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, threshold=threshold, pair = '23')
+    tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, threshold=threshold, pair='23')
     tracker.read()
 
 
@@ -325,7 +325,8 @@ if __name__ == '__main__':
     for i in range(4, 7):
         dir_list = ['session{}_center'.format(i), 'session{}_left'.format(i), 'session{}_right'.format(i)]
         vid_list.extend([os.path.join(vid_path, d) for d in dir_list])
-        calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list])
+        calib_list.extend(
+            [os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list])
 
     # os.environ['CUDA_VISIBLE_DEVICES'] = '1'
     name = 'mask_ablation'
@@ -340,7 +341,7 @@ if __name__ == '__main__':
     # model._make_predict_function()
 
     for vid, calib in zip(vid_list, calib_list):
-        test_video(model, vid, calib, 640, 360, 1, name, out_path=None, online = False)
+        test_video(model, vid, calib, 640, 360, 1, name, out_path=None, online=False)
 
     thresholds = [0.5]
 

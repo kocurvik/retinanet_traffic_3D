@@ -27,6 +27,7 @@ from keras_retinanet.preprocessing.centers_generator import Centers_Generator
 if __name__ == "__main__" and __package__ is None:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
     import keras_retinanet.bin  # noqa: F401
+
     __package__ = "keras_retinanet.bin"
 
 # Change these to absolute imports if you copy this script outside the keras_retinanet package.
@@ -51,9 +52,9 @@ def create_generator():
     Box_dataset = 'C:/datasets/BoxCars116k/dataset_warped.pkl'
 
     common_args = {
-        'batch_size'       : 1,
-        'image_min_side'   : 540,
-        'image_max_side'   : 960
+        'batch_size': 1,
+        'image_min_side': 540,
+        'image_max_side': 960
     }
 
     generator = Centers_Generator(
@@ -77,7 +78,7 @@ def run(generator):
     # display images, one at a time
     for i in range(generator.size()):
         # load the data
-        image       = generator.load_image(i)
+        image = generator.load_image(i)
         annotations = generator.load_annotations(i)
         transform_index = generator.transform_indices[i]
 
@@ -89,8 +90,10 @@ def run(generator):
 
         anchors = anchors_for_shape(image.shape)
 
-        labels_batch, regression_batch, centers_batch, boxes_batch = generator.compute_anchor_targets(anchors, [image], [annotations], generator.num_classes())
-        anchor_states                               = labels_batch[0, :, -1]
+        labels_batch, regression_batch, centers_batch, boxes_batch = generator.compute_anchor_targets(anchors, [image],
+                                                                                                      [annotations],
+                                                                                                      generator.num_classes())
+        anchor_states = labels_batch[0, :, -1]
 
         # draw anchors on the image
         # if args.anchors:
@@ -98,11 +101,11 @@ def run(generator):
 
         # draw annotations on the image
         # if args.annotations:
-            # draw annotations in red
+        # draw annotations in red
         draw_annotations(image, annotations, color=(0, 0, 255), label_to_name=generator.label_to_name)
 
-            # draw regressed anchors in green to override most red annotations
-            # result is that annotations without anchors are red, with anchors are green
+        # draw regressed anchors in green to override most red annotations
+        # result is that annotations without anchors are red, with anchors are green
         draw_boxes(image, boxes_batch[0, anchor_states == 1, :], (0, 255, 0))
 
         cv2.imshow('Image', image)
@@ -119,7 +122,7 @@ def main(args=None):
     cv2.namedWindow('Image', cv2.WINDOW_NORMAL)
 
     while run(generator):
-            pass
+        pass
     # else:
     #     run(generator)
 

@@ -25,12 +25,12 @@ class Accumulator:
         b = p2[:, 0] - p1[:, 0]
         c = - a * p1[:, 0] - b * p1[:, 1]
 
-        self.accumulate_abc_lines(a,b,c)
+        self.accumulate_abc_lines(a, b, c)
 
     def accumulate_abc_lines(self, a, b, c):
-        alpha = np.where(a*b >= 0, 1.0, -1.0)
-        beta = np.where(b*c >= 0, 1.0, -1.0)
-        gamma = np.where(a*c >= 0, 1.0, -1.0)
+        alpha = np.where(a * b >= 0, 1.0, -1.0)
+        beta = np.where(b * c >= 0, 1.0, -1.0)
+        gamma = np.where(a * c >= 0, 1.0, -1.0)
 
         edgepts = np.empty([a.shape[0], 8], dtype=np.float32)
         edgepts[:, 0] = alpha * a / (c + gamma * a)
@@ -39,7 +39,7 @@ class Accumulator:
         edgepts[:, 3] = 0.0
         edgepts[:, 4] = 0.0
         edgepts[:, 5] = b / (a + alpha * b)
-        edgepts[:, 6] = -alpha * a / (c + gamma *a)
+        edgepts[:, 6] = -alpha * a / (c + gamma * a)
         edgepts[:, 7] = alpha * c / (c + gamma * a)
 
         edgepts = np.round(edgepts * self.size) + self.size
@@ -64,7 +64,7 @@ class Accumulator:
         p = (p - self.size) / self.size
         # print(p, q)
         vp = [q, np.sign(p) * p + np.sign(q) * q - 1, p]
-        return self.height * vp[0]/vp[2], self.width * vp[1]/vp[2]
+        return self.height * vp[0] / vp[2], self.width * vp[1] / vp[2]
 
     def get_conditional_vp(self, vp1, pp):
         success = False

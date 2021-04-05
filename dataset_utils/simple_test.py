@@ -9,17 +9,14 @@ import os
 import sys
 import cv2
 
-# Multithreded script to run the evaluation for the Orig2D
-# ablation experiment. Online version displays the result.
-# Offline version first saves all detections and then tracks
-# them separately.
+# Multithreded script to run the evaluation for the Orig2D ablation experiment. Online version displays the result.
+# Offline version first saves all detections and then tracks them separately.
 
 if __name__ == "__main__" and __package__ is None:
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..' ))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     # import keras_retinanet.bin  # noqa: F401
     # __package__ = "keras_retinanet.bin"
     print(sys.path)
-
 
 from dataset_utils.simple_tracker import SimpleTracker
 from dataset_utils.writer import Writer
@@ -63,7 +60,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, out_path=N
                     continue
                 frames.append(frame)
                 image = cv2.bitwise_and(frame, frame, mask=mask)
-                t_image = cv2.resize(image, (im_w,im_h))
+                t_image = cv2.resize(image, (im_w, im_h))
                 # cv2.imshow('transform', t_image)
                 # if cv2.waitKey(1) & 0xFF == ord('q'):
                 #     e_stop.set()
@@ -139,7 +136,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, out_path=N
                 writer.process(boxes)
                 frame_cnt += 1
             # print("Total FPS: {}".format(batch / (time.time() - total_time)))
-            print("Video: {} at frame: {}, FPS: {}".format(vid_name, frame_cnt, frame_cnt / (time.time()-total_time)))
+            print("Video: {} at frame: {}, FPS: {}".format(vid_name, frame_cnt, frame_cnt / (time.time() - total_time)))
             # total_time = time.time()
 
     inferencer = Thread(target=inference)
@@ -168,6 +165,7 @@ def track_detections(json_path, im_w, im_h, name, threshold, keep=5):
     tracker = SimpleTracker(json_path, im_w, im_h, name, threshold=threshold, keep=keep)
     tracker.read()
 
+
 if __name__ == "__main__":
 
     if os.name == 'nt':
@@ -184,24 +182,25 @@ if __name__ == "__main__":
         vid_list.extend([os.path.join(vid_path, d, 'video.avi') for d in dir_list])
         calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list])
 
-    # os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    # name = '640_360_ablation_0'
-    #
-    # if os.name == 'nt':
-    #     model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_ablation_640_360.h5',
-    #                                               backbone_name='resnet50', convert=False)
-    # else:
-    #     model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}_at30.h5'.format(name, name),
-    #                                               backbone_name='resnet50', convert=False)
-    #
-    # print(model.summary)
-    # model._make_predict_function()
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+    name = '640_360_ablation'
 
-    name = 'ablation_640_360_0_at30'
+    if os.name == 'nt':
+        model = keras_retinanet.models.load_model(
+            'D:/Skola/PhD/code/keras-retinanet/models/resnet50_ablation_640_360.h5',
+            backbone_name='resnet50', convert=False)
+    else:
+        model = keras_retinanet.models.load_model(
+            '/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}_at30.h5'.format(name, name),
+            backbone_name='resnet50', convert=False)
+
+    print(model.summary)
+    model._make_predict_function()
+
+    name = 'ablation_640_360'
 
     # for vid, calib in zip(vid_list, calib_list):
     #     test_video(model, vid, calib, 640, 360, 16, name, online=False)
 
     for calib in calib_list:
         track_detections(calib, 640, 360, name, threshold=0.5, keep=10)
-

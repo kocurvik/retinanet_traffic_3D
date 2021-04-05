@@ -6,8 +6,8 @@ import os
 import sys
 import numpy as np
 
-# Script which creates training data from the BrnoCompSpeed dataset
-# for the Transform3D and Transform2D variants from the paper
+# Script which creates training data from the BrnoCompSpeed dataset for the Transform3D and Transform2D variants from
+# the paper
 
 # Requires https://github.com/matterport/Mask_RCNN
 
@@ -16,8 +16,6 @@ if os.name == 'nt':
 else:
     # sys.path[0:0] = ['/home/kocur/code/Mask_RCNN']
     sys.path[0:0] = ['/home/k/kocur15/code/Mask_RCNN']
-
-
 
 import coco as coco
 import model as modellib
@@ -64,8 +62,10 @@ class InferenceConfig(coco.CocoConfig):
     IMAGES_PER_GPU = 8
     DETECTION_MIN_CONFIDENCE = 0.5
 
+
 class BCS_boxer(object):
-    def __init__(self, model, vid_list, calib_list, pkl_path, images_path, im_w, im_h, lastvid=0, lastpos=0, save_often=False, n=0):
+    def __init__(self, model, vid_list, calib_list, pkl_path, images_path, im_w, im_h, lastvid=0, lastpos=0,
+                 save_often=False, n=0):
         # self.vehicles = [3, 6, 8]
         self.model = model
         self.vehicles = [3, 4, 6, 8]
@@ -147,10 +147,10 @@ class BCS_boxer(object):
 
         rt, lt = self.tangent_point_poly(vp0_t, V)
 
-        image = cv2.cvtColor(image,cv2.COLOR_GRAY2RGB)
-        image = cv2.line(image,tuple(rt),tuple(vp0_t),(0,255,0))
-        image = cv2.line(image,tuple(lt),tuple(vp0_t),(0,0,255))
-        image = cv2.rectangle(image,(x_min,y_min),(x_max,y_max),(255,0,0),2)
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+        image = cv2.line(image, tuple(rt), tuple(vp0_t), (0, 255, 0))
+        image = cv2.line(image, tuple(lt), tuple(vp0_t), (0, 0, 255))
+        image = cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (255, 0, 0), 2)
 
         if cls == 1:
             cy1 = intersection(line([x_min, y_min], [x_min, y_max]), line(vp0_t, lt))
@@ -174,8 +174,8 @@ class BCS_boxer(object):
             cy1 = intersection(line([x_max, y_min], [x_max, y_max]), line(vp0_t, rt))
             cy2 = intersection(line([x_min, y_min], [x_min, y_max]), line(vp0_t, lt))
 
-        image = cv2.circle(image, tuple(cy1),2,(0,255,0))
-        image = cv2.circle(image, tuple(cy2),2,(0,0,255))
+        image = cv2.circle(image, tuple(cy1), 2, (0, 255, 0))
+        image = cv2.circle(image, tuple(cy2), 2, (0, 0, 255))
 
         # cv2.imshow("Detects", image)
         # cv2.waitKey(0)
@@ -230,7 +230,6 @@ class BCS_boxer(object):
         ret, frame = cap.read()
         if mask is None:
             mask = 255 * np.ones(frame.shape[:2], dtype=np.uint8)
-
 
         if pair == '12':
             M, IM = get_transform_matrix_with_criterion(vp1, vp2, mask, self.im_w, self.im_h)
@@ -289,13 +288,13 @@ class BCS_boxer(object):
                 if self.save_often and self.pos % (1000 * self.n) == 0:
                     with open(self.pkl_path, "wb") as f:
                         pickle.dump(self.entries, f)
-                        print("Saving, vid:{}, pos:{}".format(self.vid,self.pos))
+                        print("Saving, vid:{}, pos:{}".format(self.vid, self.pos))
 
                 self.pos += self.n
 
         with open(self.pkl_path, "wb") as f:
             pickle.dump(self.entries, f)
-            print("Saving, vid:{}, pos:{}".format(self.vid,self.pos))
+            print("Saving, vid:{}, pos:{}".format(self.vid, self.pos))
 
         cap.release()
         # cv2.destroyAllWindows()
@@ -328,11 +327,10 @@ if __name__ == '__main__':
     #     calib_list = [os.path.join(results_path, d, 'system_SochorCVIU_ManualCalib_ManualScale.json') for d in dir_list]
     #     vid_lists.append(vid_list)
     #     calib_lists.append(calib_list)
-
+    #
     # for i in range(4):
     #     boxer = BCS_boxer(model, vid_lists[i], calib_lists[i], pkl_paths[i], image_paths[i], 960, 540, save_often = True, n = 25)
     #     boxer.process()
-
 
     if os.name == 'nt':
         vid_path = 'D:/Skola/PhD/data/LuvizonDataset/dataset/'
@@ -352,10 +350,11 @@ if __name__ == '__main__':
     # train dict
     vid_dict = {1: [3, 4], 2: [7, 8, 9, 10, 11], 3: [2], 4: [2]}
 
-
     vid_list = []
     for i in vid_dict.keys():
-        vid_list.extend([os.path.join(vid_path, 'subset{:02d}'.format(i), 'video{:02d}'.format(j), 'video.h264') for j in vid_dict[i]])
+        vid_list.extend(
+            [os.path.join(vid_path, 'subset{:02d}'.format(i), 'video{:02d}'.format(j), 'video.h264') for j in
+             vid_dict[i]])
 
     calib_path = os.path.join(results_path, 'subset01', 'video01', 'calib.json')
     calib_list = [calib_path for _ in vid_list]
@@ -363,8 +362,5 @@ if __name__ == '__main__':
     pkl_path = os.path.join(ds_path, 'dataset_9.pkl')
     image_path = os.path.join(ds_path, 'images_9')
 
-    boxer = BCS_boxer(model, vid_list, calib_list, pkl_path, image_path, 960, 540, save_often = True, n = 15)
+    boxer = BCS_boxer(model, vid_list, calib_list, pkl_path, image_path, 960, 540, save_often=True, n=15)
     boxer.process()
-
-    # vid_list = [os.path.join(vid_path, d, 'video.avi') for d in dir_list]
-

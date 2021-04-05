@@ -36,9 +36,9 @@ class CocoGenerator(Generator):
             data_dir: Path to where the COCO dataset is stored.
             set_name: Name of the set to parse.
         """
-        self.data_dir  = data_dir
-        self.set_name  = set_name
-        self.coco      = COCO(os.path.join(data_dir, 'annotations', 'instances_' + set_name + '.json'))
+        self.data_dir = data_dir
+        self.set_name = set_name
+        self.coco = COCO(os.path.join(data_dir, 'annotations', 'instances_' + set_name + '.json'))
         self.image_ids = self.coco.getImgIds()
 
         self.load_classes()
@@ -52,8 +52,8 @@ class CocoGenerator(Generator):
         categories = self.coco.loadCats(self.coco.getCatIds())
         categories.sort(key=lambda x: x['id'])
 
-        self.classes             = {}
-        self.coco_labels         = {}
+        self.classes = {}
+        self.coco_labels = {}
         self.coco_labels_inverse = {}
         for c in categories:
             self.coco_labels[len(self.classes)] = c['id']
@@ -111,7 +111,7 @@ class CocoGenerator(Generator):
         """ Load an image at the image_index.
         """
         image_info = self.coco.loadImgs(self.image_ids[image_index])[0]
-        path       = os.path.join(self.data_dir, 'images', self.set_name, image_info['file_name'])
+        path = os.path.join(self.data_dir, 'images', self.set_name, image_info['file_name'])
         return read_image_bgr(path)
 
     def load_annotations(self, image_index):
@@ -119,7 +119,7 @@ class CocoGenerator(Generator):
         """
         # get ground truth annotations
         annotations_ids = self.coco.getAnnIds(imgIds=self.image_ids[image_index], iscrowd=False)
-        annotations     = np.zeros((0, 5))
+        annotations = np.zeros((0, 5))
 
         # some images appear to miss annotations (like image with id 257034)
         if len(annotations_ids) == 0:
@@ -132,10 +132,10 @@ class CocoGenerator(Generator):
             if a['bbox'][2] < 1 or a['bbox'][3] < 1:
                 continue
 
-            annotation        = np.zeros((1, 5))
+            annotation = np.zeros((1, 5))
             annotation[0, :4] = a['bbox']
-            annotation[0, 4]  = self.coco_label_to_label(a['category_id'])
-            annotations       = np.append(annotations, annotation, axis=0)
+            annotation[0, 4] = self.coco_label_to_label(a['category_id'])
+            annotations = np.append(annotations, annotation, axis=0)
 
         # transform from [x, y, w, h] to [x1, y1, x2, y2]
         annotations[:, 2] = annotations[:, 0] + annotations[:, 2]

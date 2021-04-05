@@ -28,6 +28,7 @@ def focal(alpha=0.25, gamma=2.0):
     Returns
         A functor that computes the focal loss using the alpha and gamma.
     """
+
     def _focal(y_true, y_pred):
         """ Compute the focal loss given the target tensor and the predicted tensor.
 
@@ -40,13 +41,13 @@ def focal(alpha=0.25, gamma=2.0):
         Returns
             The focal loss of y_pred w.r.t. y_true.
         """
-        labels         = y_true[:, :, :-1]
-        anchor_state   = y_true[:, :, -1]  # -1 for ignore, 0 for background, 1 for object
+        labels = y_true[:, :, :-1]
+        anchor_state = y_true[:, :, -1]  # -1 for ignore, 0 for background, 1 for object
         classification = y_pred
 
         # filter out "ignore" anchors
-        indices        = backend.where(keras.backend.not_equal(anchor_state, -1))
-        labels         = backend.gather_nd(labels, indices)
+        indices = backend.where(keras.backend.not_equal(anchor_state, -1))
+        labels = backend.gather_nd(labels, indices)
         classification = backend.gather_nd(classification, indices)
 
         # compute the focal loss
@@ -67,7 +68,7 @@ def focal(alpha=0.25, gamma=2.0):
     return _focal
 
 
-def smooth_l1(sigma=3.0, val_num = 4):
+def smooth_l1(sigma=3.0, val_num=4):
     """ Create a smooth L1 loss functor.
 
     Args
@@ -89,13 +90,13 @@ def smooth_l1(sigma=3.0, val_num = 4):
             The smooth L1 loss of y_pred w.r.t. y_true.
         """
         # separate target and state
-        regression        = y_pred
+        regression = y_pred
         regression_target = y_true[:, :, : val_num]
-        anchor_state      = y_true[:, :, val_num]
+        anchor_state = y_true[:, :, val_num]
 
         # filter out "ignore" anchors
-        indices           = backend.where(keras.backend.equal(anchor_state, 1))
-        regression        = backend.gather_nd(regression, indices)
+        indices = backend.where(keras.backend.equal(anchor_state, 1))
+        regression = backend.gather_nd(regression, indices)
         regression_target = backend.gather_nd(regression_target, indices)
 
         # compute smooth L1 loss

@@ -42,7 +42,9 @@ def assert_keras_version():
     """
     detected = keras.__version__
     required = '.'.join(map(str, minimum_keras_version))
-    assert(keras_version() >= minimum_keras_version), 'You are using keras version {}. The minimum required version is {}.'.format(detected, required)
+    assert (
+                keras_version() >= minimum_keras_version), 'You are using keras version {}. The minimum required version is {}.'.format(
+        detected, required)
 
 
 def check_keras_version():

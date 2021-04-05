@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-
 import keras
 from keras.utils import get_file
 
@@ -58,7 +57,8 @@ class VGGBackbone(Backbone):
         allowed_backbones = ['vgg16', 'vgg19']
 
         if self.backbone not in allowed_backbones:
-            raise ValueError('Backbone (\'{}\') not in allowed backbones ({}).'.format(self.backbone, allowed_backbones))
+            raise ValueError(
+                'Backbone (\'{}\') not in allowed backbones ({}).'.format(self.backbone, allowed_backbones))
 
     def preprocess_image(self, inputs):
         """ Takes as input an image and prepares it for being passed through the network.

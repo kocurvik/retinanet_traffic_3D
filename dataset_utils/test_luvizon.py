@@ -12,6 +12,7 @@ from scipy.optimize import curve_fit
 
 MAX_FRAMES = 200
 
+
 def old_lane_functor():
     Y_LANE = 100
     Y_TOP = 50
@@ -48,6 +49,7 @@ def old_lane_functor():
         return np.array(pts), np.array(frames)
 
     return lane_fn, valid_meas_fn
+
 
 SCALES = [[], [], []]
 
@@ -179,7 +181,8 @@ def clean_gt(gt_cars):
     tot = 0
     for gt_car in gt_cars:
         radar_element = gt_car.find('radar')
-        if radar_element is None or gt_car.attrib['moto'] == 'True':
+        if radar_element is None or gt_car.attrib['moto'] == 'True' or gt_car.attrib['plate'] == 'False' or \
+                gt_car.attrib['sema'] == 'True':
             continue
         radar = radar_element.attrib
         start_frame = int(radar['frame_start'])
@@ -298,8 +301,10 @@ if __name__ == "__main__":
         results_path = '/home/k/kocur15/data/luvizon/results/'
 
     vid_dict = {1: [1, 2], 2: [1, 2, 3, 4, 5, 6], 3: [1], 4: [1], 5: [1]}
+    # vid_dict = {1: [1], 2: [1], 3: [1], 4: [1], 5: [1]}
     name = 'system_Transform3D_BCL_0.5_960_540_VP2VP3.json'
-    # name = 'system_Transform3D_BCL_0.3_640_360_VP2VP3.json'
+    # name = 'system_Transform3D_960_540_VP2VP3.json'
+    # name = 'system_Transform3D_BCL_0.5_640_360_VP2VP3.json'
 
     # name = 'system_Transform3D_960_540_VP2VP3.json'
     # vid_dict = {1: [1, 2, 3, 4], 2: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 3: [1, 2], 4: [1, 2], 5: [1]}
@@ -312,33 +317,11 @@ if __name__ == "__main__":
         calib_list.extend(
             [os.path.join(results_path, 'subset0{}'.format(i), 'video{:02d}'.format(j), name) for j in vid_dict[i]])
 
-    init_results = []
-    init_scales = [1.0] * 3
-
-    for calib, gt in zip(calib_list, gt_list):
-        init_results.append(test_video(calib, gt, init_scales))
-
-    gt_sum = np.array([0, 0, 0], dtype=np.float64)
-    meas_sum = np.array([0, 0, 0], dtype=np.float64)
-    n = np.array([0, 0, 0])
-    for result in init_results:
-        for gt_car in result:
-            if gt_car['matched']:
-                n[gt_car['lane'] - 1] += 1
-                gt_sum[gt_car['lane'] - 1] += gt_car['speed']
-                meas_sum[gt_car['lane'] - 1] += gt_car['match']['speed']
-
-    computed_scales = (gt_sum + 0.5 * n) / meas_sum
-    # computed_scales = (gt_sum) / meas_sum
-    print(gt_sum[0]/meas_sum[0])
-    print(computed_scales)
-    # computed_scale = (np.sum(gt_sum) + np.sum(n) * 0.5) / np.sum(meas_sum)
-    # computed_scales = np.repeat(computed_scale, 3)
-
+    scales = np.array([22.64256336, 22.02260989, 20.87040733])
 
     results = []
     for calib, gt in zip(calib_list, gt_list):
-        results.extend(test_video(calib, gt, computed_scales))
+        results.extend(test_video(calib, gt, scales))
 
     errors = np.array([gt_car['speed'] - gt_car['match']['speed'] for gt_car in results if gt_car['matched']])
     correct = ((errors < 2) & (errors > -3)).sum()
@@ -346,7 +329,3 @@ if __name__ == "__main__":
     print("Recall: {}".format(len(errors) / len(results)))
     print("Correct from matched: {}".format(correct / len(errors)))
     print("Correct from all: {}".format(correct / len(results)))
-    print("Mean: {}".format(np.nanmean(errors)))
-    print("Median: {}".format(np.nanmedian(errors)))
-    print("STD: {}".format(np.nanstd(errors)))
-

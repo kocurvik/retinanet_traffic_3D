@@ -6,8 +6,9 @@ import numpy as np
 from dataset_utils.geometry import computeCameraCalibration
 
 
-def line_to_point(p1,p2,p3):
-    return np.abs(np.cross(p2-p1,p3-p1,axis=2)/np.linalg.norm(p2-p1, axis=2))
+def line_to_point(p1, p2, p3):
+    return np.abs(np.cross(p2 - p1, p3 - p1, axis=2) / np.linalg.norm(p2 - p1, axis=2))
+
 
 def get_pts(vid_dir, json_path):
     video_path = os.path.join(vid_dir, 'video.avi')
@@ -27,22 +28,20 @@ def get_pts(vid_dir, json_path):
     cap = cv2.VideoCapture(video_path)
     ret, frame = cap.read()
 
-
     frame = cv2.resize(frame, (640, 360))
     vp0 = vp0 / 3
     prvs = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     hsv = np.zeros_like(frame)
-    accumulator = np.zeros([360,640])
+    accumulator = np.zeros([360, 640])
     hsv[..., 1] = 255
 
-    y,x = np.mgrid[0:360, 0:640]
-    yx = np.stack([x,y], axis=2)
-
+    y, x = np.mgrid[0:360, 0:640]
+    yx = np.stack([x, y], axis=2)
 
     cnt = 0
-    while(cap.isOpened(), cnt < 10000):
+    while (cap.isOpened(), cnt < 10000):
         ret, frame2 = cap.read()
-        frame2 = cv2.resize(frame2,(640,360))
+        frame2 = cv2.resize(frame2, (640, 360))
         next = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
         flow = cv2.calcOpticalFlowFarneback(prvs, next, None, 0.5, 3, 15, 3, 7, 1.5, 0)
 
@@ -58,7 +57,7 @@ def get_pts(vid_dir, json_path):
         accepted[d < 3] = 1
         n = np.linalg.norm(flow, axis=2)
         accepted[n < 1] = 0
-        accepted[flow[:,:,1]<0] = 0
+        accepted[flow[:, :, 1] < 0] = 0
         accumulator = accumulator + accepted
 
         # mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1])
@@ -71,10 +70,10 @@ def get_pts(vid_dir, json_path):
         cv2.imshow('frame', frame2)
 
         final = np.zeros_like(accumulator)
-        final[accumulator > 0.01*np.max(accumulator)] = 1
+        final[accumulator > 0.01 * np.max(accumulator)] = 1
 
-        cv2.imshow('accumulator', accumulator/np.max(accumulator))
-        cv2.imshow('norm', n/np.max(n))
+        cv2.imshow('accumulator', accumulator / np.max(accumulator))
+        cv2.imshow('norm', n / np.max(n))
         cv2.imshow('final', final)
         k = cv2.waitKey(30) & 0xff
         if k == 27:
@@ -82,6 +81,7 @@ def get_pts(vid_dir, json_path):
         prvs = next
     cv2.destroyAllWindows()
     cap.release()
+
 
 if __name__ == '__main__':
     vid_dir = 'D:/Skola/PhD/data/2016-ITS-BrnoCompSpeed/dataset/session5_left'

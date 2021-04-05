@@ -11,6 +11,7 @@ from dataset_utils.geometry import line, intersection
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 import keras_retinanet.bin  # noqa: F401
+
 __package__ = "keras_retinanet.bin"
 
 from ..utils.compute_overlap import compute_overlap
@@ -19,7 +20,7 @@ font = cv2.FONT_HERSHEY_SIMPLEX
 
 
 class SimpleTracker:
-    def __init__(self, json_path, im_w, im_h, name, threshold = 0.7, keep=5):
+    def __init__(self, json_path, im_w, im_h, name, threshold=0.7, keep=5):
         self.tracks = []
         self.assigned = []
         self.last_id = 0
@@ -31,14 +32,13 @@ class SimpleTracker:
         self.threshold = threshold
         self.keep = keep
         self.frame = 0
-        self.write_path = os.path.join(os.path.dirname(json_path),'system_Orig2D.json')
-        self.read_path = os.path.join(os.path.dirname(json_path),'detections_{}.json'.format(self.name))
-
+        self.write_path = os.path.join(os.path.dirname(json_path), 'system_Orig2D.json')
+        self.read_path = os.path.join(os.path.dirname(json_path), 'detections_{}.json'.format(self.name))
 
         with open(json_path, 'r+') as file:
-        # with open(os.path.join(os.path.dirname(json_path), 'system_retinanet_first.json'), 'r+') as file:
+            # with open(os.path.join(os.path.dirname(json_path), 'system_retinanet_first.json'), 'r+') as file:
             structure = json.load(file)
-            self.json_structure = {'cars':[], 'camera_calibration':structure['camera_calibration']}
+            self.json_structure = {'cars': [], 'camera_calibration': structure['camera_calibration']}
 
     def draw_box(self, box, id, image_b):
         xmin = box[-4] * self.scale_w
@@ -46,10 +46,10 @@ class SimpleTracker:
         xmax = box[-2] * self.scale_w
         ymax = box[-1] * self.scale_h
 
-        center = ((xmin + xmax)/2,ymax)
-        image_b = cv2.rectangle(image_b,(int(xmin),int(ymin)),(int(xmax),int(ymax)),(0, 0, 255),2)
-        image_b = cv2.putText(image_b, str(id), (int(xmin),int(ymax)), font, 4, (0, 0, 255), 2, cv2.LINE_AA)
-        image_b = cv2.circle(image_b, (int(center[0]), int(center[1])), 5, (0,255,0), 3)
+        center = ((xmin + xmax) / 2, ymax)
+        image_b = cv2.rectangle(image_b, (int(xmin), int(ymin)), (int(xmax), int(ymax)), (0, 0, 255), 2)
+        image_b = cv2.putText(image_b, str(id), (int(xmin), int(ymax)), font, 4, (0, 0, 255), 2, cv2.LINE_AA)
+        image_b = cv2.circle(image_b, (int(center[0]), int(center[1])), 5, (0, 255, 0), 3)
 
         return image_b, center
 
@@ -58,7 +58,7 @@ class SimpleTracker:
         ymin = box[-3] * self.scale_h
         xmax = box[-2] * self.scale_w
         ymax = box[-1] * self.scale_h
-        center = ((xmin + xmax)/2,ymax)
+        center = ((xmin + xmax) / 2, ymax)
         return center
 
     def process(self, boxes, image):
@@ -67,12 +67,11 @@ class SimpleTracker:
         if self.frame % 1000 == 0:
             self.write()
 
-
         for box in boxes:
             if box[0] < self.threshold:
                 continue
             track = self.get_track(box)
-            image_b, center = self.draw_box(box,track.id,image_b)
+            image_b, center = self.draw_box(box, track.id, image_b)
             track.assign_center(center)
         self.remove()
 
@@ -109,7 +108,7 @@ class SimpleTracker:
     def get_track(self, box):
         if len(self.tracks) == 0:
             self.last_id += 1
-            new_track = self.Track(box,self.last_id, self.frame)
+            new_track = self.Track(box, self.last_id, self.frame)
             self.tracks.append(new_track)
             return new_track
 
@@ -124,7 +123,7 @@ class SimpleTracker:
                 max_track = track
         if max_track is None:
             self.last_id += 1
-            new_track = self.Track(box,self.last_id, self.frame)
+            new_track = self.Track(box, self.last_id, self.frame)
             self.tracks.append(new_track)
             return new_track
         else:
@@ -152,15 +151,14 @@ class SimpleTracker:
         if len(frames) < 5:
             return
 
-        dist = math.sqrt(math.pow(posX[0] - posX[-1],2) + math.pow(posY[0] - posY[-1],2))
+        dist = math.sqrt(math.pow(posX[0] - posX[-1], 2) + math.pow(posY[0] - posY[-1], 2))
         if dist > 100:
-            entry = {'frames':track.frames, 'id': track.id, 'posX': posX, 'posY': posY}
+            entry = {'frames': track.frames, 'id': track.id, 'posX': posX, 'posY': posY}
             self.json_structure['cars'].append(entry)
 
     def write(self):
-        with open(self.write_path,'w') as file:
+        with open(self.write_path, 'w') as file:
             json.dump(self.json_structure, file)
-
 
     class Track:
         def __init__(self, box, id, frame):
@@ -174,7 +172,7 @@ class SimpleTracker:
 
         def iou(self, box):
             last_box = self.boxes[-1][np.newaxis, -4:].astype(np.float64)
-            query_box = box[np.newaxis,-4:].astype(np.float64)
+            query_box = box[np.newaxis, -4:].astype(np.float64)
 
             return compute_overlap(last_box, query_box)
 

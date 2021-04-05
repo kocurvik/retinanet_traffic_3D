@@ -56,10 +56,10 @@ def evaluate_coco(generator, model, threshold=0.05):
 
             # append detection for each positively labeled class
             image_result = {
-                'image_id'    : generator.image_ids[index],
-                'category_id' : generator.label_to_coco_label(label),
-                'score'       : float(score),
-                'bbox'        : box.tolist(),
+                'image_id': generator.image_ids[index],
+                'category_id': generator.label_to_coco_label(label),
+                'score': float(score),
+                'bbox': box.tolist(),
             }
 
             # append detection to results

@@ -5,6 +5,7 @@ from copy import copy
 
 from geometry import is_right, line, intersection, distance
 
+
 # Contains helper functions to use the transformation
 
 def warp_point(p, M):
@@ -96,7 +97,7 @@ def get_pts_from_mask(mask, vp1, vp2):
     _, mask = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
     countours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2:]
     hull = cv2.convexHull(countours[0])
-    pts = hull[:,0,:]
+    pts = hull[:, 0, :]
     idx1, idx2 = find_cornerpts(vp1, pts)
     idx3, idx4 = find_cornerpts(vp2, pts)
     pts = pts[[idx1, idx2, idx3, idx4]]
@@ -113,13 +114,13 @@ def get_transform_matrix_with_criterion(vp1, vp2, mask, im_w, im_h, constraint=0
     M, IM = get_transform_matrix(vp1, vp2, mask, im_w, im_h, pts=pts, enforce_vp1=enforce_vp1, vp_top=vp_top)
     t_image = cv2.warpPerspective(image, M, (im_w, im_h), borderMode=cv2.BORDER_CONSTANT)
 
-    while cv2.countNonZero(t_image)/(im_w*im_h) < constraint:
+    while cv2.countNonZero(t_image) / (im_w * im_h) < constraint:
         print(cv2.countNonZero(t_image) / (im_w * im_h))
         # g_image = cv2.cvtColor(t_image, cv2.COLOR_BGR2GRAY)
         _, b_image = cv2.threshold(t_image, 177, 255, 0)
         b_image = 255 - b_image
 
-        mask = mask[:-5,:]
+        mask = mask[:-5, :]
         pts = get_pts_from_mask(mask, vp1, vp2)
         # cv2.imshow("t_image", b_image)
         # cv2.waitKey(0)
@@ -133,11 +134,10 @@ def get_transform_matrix_with_criterion(vp1, vp2, mask, im_w, im_h, constraint=0
 
 def get_transform_matrix(vp1, vp2, image, im_w, im_h, pts=None, enforce_vp1=True, vp_top=None):
     if pts is None:
-        pts = [[0,0],[image.shape[1],0],[image.shape[1],image.shape[0]],[0,image.shape[0]]]
+        pts = [[0, 0], [image.shape[1], 0], [image.shape[1], image.shape[0]], [0, image.shape[0]]]
 
     vp1p1, vp1p2 = find_cornerpts(vp1, pts)
     vp2p1, vp2p2 = find_cornerpts(vp2, pts)
-
 
     # right side
     vp1l1 = line(vp1, pts[vp1p1])
@@ -166,7 +166,7 @@ def get_transform_matrix(vp1, vp2, image, im_w, im_h, pts=None, enforce_vp1=True
         if vp1[1] > im_h:
             t_dpts = [[im_w, 0], [im_w, im_h], [0, im_h], [0, 0]]
 
-        t_ipts = np.zeros((4,2), dtype=np.float32)
+        t_ipts = np.zeros((4, 2), dtype=np.float32)
         t_pts = np.array(t_dpts, np.float32)
 
         if ipts[0][1] < ipts[2][1]:
@@ -188,11 +188,10 @@ def get_transform_matrix(vp1, vp2, image, im_w, im_h, pts=None, enforce_vp1=True
                 t_ipts = np.roll(t_ipts, 1, axis=0)
                 M = cv2.getPerspectiveTransform(t_ipts, t_pts)
                 vp_top_t = cv2.perspectiveTransform(np.array([[vp_top]]), M)
-                if vp_top_t[0,0,1] < 0:
+                if vp_top_t[0, 0, 1] < 0:
                     return cv2.getPerspectiveTransform(t_ipts, t_pts), cv2.getPerspectiveTransform(t_pts, t_ipts)
         else:
             return cv2.getPerspectiveTransform(t_ipts, t_pts), cv2.getPerspectiveTransform(t_pts, t_ipts)
-
 
     ipts = np.array(ipts, np.float32)
 
@@ -216,6 +215,6 @@ def get_transform_matrix(vp1, vp2, image, im_w, im_h, pts=None, enforce_vp1=True
     res.append(set_x_right.intersection(set_y_top).pop())
 
     t_pts = np.array(t_dpts, np.float32)
-    t_ipts = ipts[res,:]
+    t_ipts = ipts[res, :]
 
     return cv2.getPerspectiveTransform(t_ipts, t_pts), cv2.getPerspectiveTransform(t_pts, t_ipts)

@@ -16,6 +16,7 @@ limitations under the License.
 
 import csv
 import pytest
+
 try:
     from io import StringIO
 except ImportError:
@@ -89,9 +90,9 @@ def test_read_annotations():
         'd.png,12,13,14,15,d' '\n'
     ), classes)
     assert annotations == {
-        'a.png': [annotation( 0,  1,  2,  3, 'a')],
-        'b.png': [annotation( 4,  5,  6,  7, 'b')],
-        'c.png': [annotation( 8,  9, 10, 11, 'c')],
+        'a.png': [annotation(0, 1, 2, 3, 'a')],
+        'b.png': [annotation(4, 5, 6, 7, 'b')],
+        'c.png': [annotation(8, 9, 10, 11, 'c')],
         'd.png': [annotation(12, 13, 14, 15, 'd')],
     }
 
@@ -105,7 +106,7 @@ def test_read_annotations_multiple():
     ), classes)
     assert annotations == {
         'a.png': [
-            annotation(0, 1,  2,  3, 'a'),
+            annotation(0, 1, 2, 3, 'a'),
             annotation(8, 9, 10, 11, 'c'),
         ],
         'b.png': [annotation(4, 5, 6, 7, 'b')],
@@ -212,4 +213,5 @@ def test_read_annotations_empty_image():
     assert csv_generator._read_annotations(csv_str('a.png,,,,,\nb.png,,,,,'), {'a': 1}) == {'a.png': [], 'b.png': []}
 
     # Check that lines without annotations don't clear earlier annotations.
-    assert csv_generator._read_annotations(csv_str('a.png,0,1,2,3,a\na.png,,,,,'), {'a': 1}) == {'a.png': [annotation(0, 1,  2,  3, 'a')]}
+    assert csv_generator._read_annotations(csv_str('a.png,0,1,2,3,a\na.png,,,,,'), {'a': 1}) == {
+        'a.png': [annotation(0, 1, 2, 3, 'a')]}

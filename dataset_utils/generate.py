@@ -5,8 +5,8 @@ import sys
 import cv2
 from warper import warp_generator
 
-# Script to generate the dataset from BoxCars116k
-# for Transform2D and Transform3D approaches from the paper
+
+# Script to generate the dataset from BoxCars116k for Transform2D and Transform3D approaches from the paper
 
 def generate_warped_dataset(pair, dataset_path, images_path, t_dataset_path, t_images_path, im_w, im_h):
     with open(dataset_path, "rb") as f:
@@ -47,7 +47,6 @@ def generate_warped_dataset(pair, dataset_path, images_path, t_dataset_path, t_i
             else:
                 t_image, _, bb_in, bb_out = warp_generator(image, bb3d, vp3, vp2, im_h, im_w)
 
-
             if not os.path.exists(os.path.dirname(targetpath)):
                 os.makedirs(os.path.dirname(targetpath))
 
@@ -74,14 +73,12 @@ if __name__ == "__main__":
     #                         'C:/datasets/BoxCars116k/dataset_warped{}.pkl', 'C:/datasets/BoxCars116k/images_warped{}/', 300,
     #                         300)
 
-    generate_warped_dataset('12','/home/k/kocur15/data/BoxCars116k/dataset.pkl', '/home/k/kocur15/data/BoxCars116k/images/',
-                            '/home/k/kocur15/data/BoxCars116k/dataset_warped_rot{}.pkl', '/home/k/kocur15/data/BoxCars116k/images_warped_rot{}/',
+    generate_warped_dataset('12', '/home/k/kocur15/data/BoxCars116k/dataset.pkl',
+                            '/home/k/kocur15/data/BoxCars116k/images/',
+                            '/home/k/kocur15/data/BoxCars116k/dataset_warped_rot{}.pkl',
+                            '/home/k/kocur15/data/BoxCars116k/images_warped_rot{}/',
                             180, 320)
 
     # generate_warped_dataset('/home/kocur/data/BoxCars116k/dataset.pkl', '/home/kocur/data/BoxCars116k/images/',
     #                         '/home/kocur/data/BoxCars116k/dataset_warped.pkl', '/home/kocur/data/BoxCars116k/images_warped/', 320,
     #                         180)
-
-    # generate_warped_dataset('C:/datasets/BoxCars116k/dataset.pkl', 'C:/datasets/BoxCars116k/images/',
-    #                         'C:/datasets/BoxCars116k/lol.pkl', 'C:/datasets/BoxCars116k/images_warped3/', 100,
-    #                         100)

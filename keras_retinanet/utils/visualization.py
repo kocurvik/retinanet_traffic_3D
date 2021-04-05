@@ -92,8 +92,8 @@ def draw_annotations(image, annotations, color=(0, 255, 0), label_to_name=None):
         label_to_name : (optional) Functor for mapping a label to a name.
     """
     for a in annotations:
-        label   = a[4]
-        c       = color if color is not None else label_color(label)
+        label = a[4]
+        c = color if color is not None else label_color(label)
         caption = '{}'.format(label_to_name(label) if label_to_name else label)
         draw_caption(image, a, caption)
 

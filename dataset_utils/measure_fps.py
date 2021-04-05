@@ -11,7 +11,7 @@ import cv2
 from dataset_utils.simple_tracker import SimpleTracker
 
 if __name__ == "__main__" and __package__ is None:
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..' ))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     # import keras_retinanet.bin  # noqa: F401
     # __package__ = "keras_retinanet.bin"
     print(sys.path)
@@ -46,12 +46,10 @@ def run_video(model, video_path, json_path, im_w, im_h, batch, name, pair, fake=
     cap = cv2.VideoCapture(os.path.join(video_path, 'video.avi'))
     mask = cv2.imread(os.path.join(video_path, 'video_mask.png'), 0)
 
-
     # cap.set(cv2.CAP_PROP_POS_FRAMES, 1564)
     # for _ in range(1500):
     #     ret, frame = cap.read()
     ret, frame = cap.read()
-
 
     if pair == '12':
         M, IM = get_transform_matrix_with_criterion(vp1, vp2, mask, im_w, im_h)
@@ -86,7 +84,7 @@ def run_video(model, video_path, json_path, im_w, im_h, batch, name, pair, fake=
                 image = cv2.bitwise_and(frame, frame, mask=mask)
                 # t_image = cv2.remap(image, map, None, cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
                 # t_image = preprocess_image(t_image)
-                t_image = cv2.resize(image, (640,360))
+                t_image = cv2.resize(image, (640, 360))
                 t_image = preprocess_image(t_image)
                 images.append(t_image)
             # print("Read FPS: {}".format(batch / (time.time() - read_time)))
@@ -136,7 +134,7 @@ def run_video(model, video_path, json_path, im_w, im_h, batch, name, pair, fake=
             # print("Total FPS: {}".format(batch / (time.time() - total_time)))
 
             total_time = time.time()
-        print("Total FPS: {}".format(batch / (1000*(time.time() - full_time))))
+        print("Total FPS: {}".format(batch / (1000 * (time.time() - full_time))))
 
     inferencer = Thread(target=inference)
 
@@ -165,7 +163,6 @@ if __name__ == "__main__":
 
     names = ['640_360_ablation_0']
 
-
     for name in names:
         width = int(name.split("_")[0])
         height = int(name.split("_")[1])
@@ -173,10 +170,11 @@ if __name__ == "__main__":
 
         print("Running for model: {}".format(name))
 
-        model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}_at30.h5'.format(name, name),
-                                                  backbone_name='resnet50', convert=False)
+        model = keras_retinanet.models.load_model(
+            '/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}_at30.h5'.format(name, name),
+            backbone_name='resnet50', convert=False)
         print(model.summary)
         model._make_predict_function()
 
         pair = '23'
-        run_video(model, vid, calib, width, height, 32, name, pair) #, fake = True)
+        run_video(model, vid, calib, width, height, 32, name, pair)  # , fake = True)

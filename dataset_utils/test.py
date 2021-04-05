@@ -9,20 +9,17 @@ import os
 import sys
 import cv2
 
-# Multithreded script to run the evaluation for the Transform2D
-# and Transform3D methods. Online version displays the result.
-# Offline version first saves all detections and then tracks
-# them separately.
+# Multithreded script to run the evaluation for the Transform2D and Transform3D methods. Online version displays the
+# result. Offline version first saves all detections and then tracks them separately.
 
 # Also includes a method to visually check the generated datasets.
 from dataset_utils.utils import FolderVideoReader, deprocess_image
 
 if __name__ == "__main__" and __package__ is None:
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..' ))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     # import keras_retinanet.bin  # noqa: F401
     # __package__ = "keras_retinanet.bin"
     print(sys.path)
-
 
 from dataset_utils.tracker import Tracker
 from dataset_utils.warper import get_transform_matrix, get_transform_matrix_with_criterion
@@ -67,7 +64,13 @@ def draw_raw_output(images, y_pred, threshold=0.5, cnt=None):
         cv2.waitKey(1)
 
 
-def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_path=None, compare=False, online=True, fake=False):
+def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_path=None, compare=False, online=True,
+               fake=False):
+    # This function runs the detections. If online=True then the system runs with tracking and outputting the resulting
+    # video. If online=False then the detections are saved to a file and have to be tracked later. The fake parameter is
+    # for ablation experiments where perspective transformation is used but only 2D bboxes are output (hence fake since
+    # we fake the c_c param to be zero to allow for the use of the same code)
+
     with open(json_path, 'r+') as file:
         # with open(os.path.join(os.path.dirname(json_path), 'system_retinanet_first.json'), 'r+') as file:
         structure = json.load(file)
@@ -186,10 +189,11 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
             q_predict.put(y_pred)
             print("GPU FPS: {}".format(batch / (time.time() - gpu_time)))
             if online:
-                draw_raw_output(images, y_pred, cnt = cnt)
+                draw_raw_output(images, y_pred, cnt=cnt)
 
     def postprocess():
-        tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, pair = pair, threshold=0.3, compare=compare, fake=fake)
+        tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, pair=pair, threshold=0.3, compare=compare,
+                          fake=fake)
         counter = 0
         total_time = time.time()
         while not e_stop.isSet():
@@ -243,7 +247,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
                 writer.process(boxes)
                 frame_cnt += 1
             # print("Total FPS: {}".format(batch / (time.time() - total_time)))
-            print("Video: {} at frame: {}, FPS: {}".format(vid_name, frame_cnt, frame_cnt / (time.time()-total_time)))
+            print("Video: {} at frame: {}, FPS: {}".format(vid_name, frame_cnt, frame_cnt / (time.time() - total_time)))
             # total_time = time.time()
 
     inferencer = Thread(target=inference)
@@ -287,22 +291,15 @@ def get_calib_params(im_h, im_w, json_path, pair, video_path):
     return IM, M, vp1, vp2, vp3
 
 
-def track_detections(json_path, video_path, pair,  im_w, im_h, name, threshold, fake = False, write_name = None, keep = 5):
-    print('Tracking: {} for t = {}'.format(name,threshold))
+def track_detections(json_path, video_path, pair, im_w, im_h, name, threshold, fake=False, write_name=None, keep=5):
+    # If test was run with online=False, then this function generates the final evaluation file
+    print('Tracking: {} for t = {}'.format(name, threshold))
 
     IM, M, vp1, vp2, vp3 = get_calib_params(im_h, im_w, json_path, pair, video_path)
 
-    tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, threshold=threshold, pair = pair, fake=fake, write_name=write_name, keep = keep)
+    tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, threshold=threshold, pair=pair, fake=fake,
+                      write_name=write_name, keep=keep)
     tracker.read()
-
-
-def export_detrac_detecions(json_path, video_path, pair,  im_w, im_h, name, fake = False, write_path=None):
-    print('Exporting DETRAC detections for: {}'.format(name))
-
-    IM, M, vp1, vp2, vp3 = get_calib_params(im_h, im_w, json_path, pair, video_path)
-
-    tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, pair=pair, fake=fake)
-    tracker.export_detrac_detections(write_path)
 
 
 def test_dataset(images_path, ds_path, json_path, im_w, im_h, pair='23'):
@@ -318,7 +315,7 @@ def test_dataset(images_path, ds_path, json_path, im_w, im_h, pair='23'):
     vp1_t = cv2.perspectiveTransform(vp1_t, M)
     vp1_t = vp1_t[0][0]
 
-    tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, 'none', threshold=0.5, pair = pair)
+    tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, 'none', threshold=0.5, pair=pair)
 
     pred_format = ['conf', 'x_min', 'y_min', 'x_max', 'y_max', 'centery']
 
@@ -364,88 +361,53 @@ if __name__ == "__main__":
     # config.gpu_options.per_process_gpu_memory_fraction = 0.45
     # k.tensorflow_backend.set_session(tf.Session(config=config))
 
-    # for i in range(4, 7):
-    #     # dir_list = ['session{}_center'.format(i), 'session{}_left'.format(i), 'session{}_right'.format(i)]
-    #     dir_list = ['session{}_right'.format(i)]
-    #     vid_list.extend([os.path.join(vid_path, d, 'video.avi') for d in dir_list])
-    #     calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list])
+    for i in range(4, 7):
+        dir_list = ['session{}_center'.format(i), 'session{}_left'.format(i), 'session{}_right'.format(i)]
+        # dir_list = ['session{}_right'.format(i)]
+        vid_list.extend([os.path.join(vid_path, d, 'video.avi') for d in dir_list])
+        calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list])
 
-
-
-    if os.name == 'nt':
-        vid_path = 'D:/Skola/PhD/data/LuvizonDataset/dataset/'
-        results_path = 'D:/Skola/PhD/data/LuvizonDataset/results/'
-    else:
-        vid_path = '/home/k/kocur15/data/luvizon/dataset/'
-        results_path = '/home/k/kocur15/data/luvizon/results/'
-
-    # sample vid_dict
-    vid_dict = {1: [1], 2: [1], 3: [1], 4: [1], 5: [1]}
-    # test vid_dict
-    vid_dict = {1: [1, 2], 2: [1, 2, 3, 4, 5, 6], 3: [1], 4: [1], 5: [1]}
-    vid_dict = {2: [6]}
-    # full vid_dict:
-    # vid_dict = {1: [1, 2, 3, 4], 2: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 3: [1, 2], 4: [1, 2], 5: [1]}
-
-
-    for i in vid_dict.keys():
-        vid_list.extend([os.path.join(vid_path, 'subset0{}'.format(i), 'video{:02d}'.format(j), 'video.h264') for j in vid_dict[i]])
-        calib_list.extend([os.path.join(results_path, 'subset0{}'.format(i), 'video{:02d}'.format(j), 'calib.json') for j in vid_dict[i]])
-
-    # calib_path = os.path.join(results_path, 'subset01', 'video01', 'calib.json')
-    # calib_list = [calib_path for _ in vid_list]
-
+    # on luvizon datset
     # if os.name == 'nt':
-    #     vid_dir = 'D:/Skola/PhD/data/DETRAC/Insight-MVT_Annotation_Test/'
+    #     vid_path = 'D:/Skola/PhD/data/LuvizonDataset/dataset/'
+    #     results_path = 'D:/Skola/PhD/data/LuvizonDataset/results/'
     # else:
-    #     vid_dir = '/home/k/kocur15/data/DETRAC/Insight-MVT_Annotation_Test/'
-    # vids = ['MVI_39031', 'MVI_39051','MVI_39211', 'MVI_39271', 'MVI_39371', 'MVI_39501', 'MVI_39511'] #, 'MVI_40742', 'MVI_40743', 'MVI_40863', 'MVI_40864']
-    # # vids = ['MVI_39271'] #, 'MVI_40742', 'MVI_40743', 'MVI_40863', 'MVI_40864']
-    # vid_list = [os.path.join(vid_dir, v) for v in vids]
-    # calib_list = [os.path.join(vid_dir, v, 'calib.json') for v in vids]
-
+    #     vid_path = '/home/k/kocur15/data/luvizon/dataset/'
+    #     results_path = '/home/k/kocur15/data/luvizon/results/'
+    # vid_dict = {1: [1, 2], 2: [1, 2, 3, 4, 5, 6], 3: [1], 4: [1], 5: [1]}
+    #
+    # for i in vid_dict.keys():
+    #     vid_list.extend([os.path.join(vid_path, 'subset0{}'.format(i), 'video{:02d}'.format(j), 'video.h264') for j in vid_dict[i]])
+    #     calib_list.extend([os.path.join(results_path, 'subset0{}'.format(i), 'video{:02d}'.format(j), 'calib.json') for j in vid_dict[i]])
 
     pair = '23'
-    width = 960
-    height = 540
-    name = 'BC+luvizon_{}_{}_{}_0'.format(width, height, pair)
+    width = 640
+    height = 360
+    name = '{}_{}_{}'.format(width, height, pair)
 
-    # if os.name =='nt':
-    #     model = keras_retinanet.models.load_model('D:/Skola/PhD/code/keras-retinanet/models/resnet50_{}.h5'.format(name),
-    #                                               backbone_name='resnet50', convert=False)
-    # else:
-    #     model = keras_retinanet.models.load_model('/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}.h5'.format(name, name),
-    #                                               backbone_name='resnet50', convert=False)
-    #
-    # print(model.summary)
-    # model._make_predict_function()
-    #
-    # for vid, calib in zip(vid_list, calib_list):
-    #     test_video(model, vid, calib, width, height, 16, name, pair, online=False, fake=False)# out_path='D:/Skola/PhD/code/keras-retinanet/video_results/center_6_12.avi')
+    if os.name == 'nt':
+        model = keras_retinanet.models.load_model(
+            'D:/Skola/PhD/code/keras_retinanet_MVAA/models/resnet50_{}.h5'.format(name),
+            backbone_name='resnet50', convert=False)
+    else:
+        model = keras_retinanet.models.load_model(
+            '/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}.h5'.format(name, name),
+            backbone_name='resnet50', convert=False)
 
-    thresholds = [0.3, 0.4, 0.5]
-    # thresholds = [0.10, 0.12, 0.14, 0.16, 0.18, 0.20, 0.22, 0.24, 0.26, 0.28, 0.30]
-    # thresholds = [0.5]
+    print(model.summary)
+    model._make_predict_function()
 
-    # name = '{}_{}_{}_0'.format(width, height, pair)
-    # write_name = 'Transform3D_BCL_640_360_VP2VP3'
-    # #
+    for vid, calib in zip(vid_list, calib_list):
+        test_video(model, vid, calib, width, height, 16, name, pair, online=True, fake=False)  # out_path='D:/Skola/PhD/code/keras-retinanet/video_results/center_6_12.avi')
+
+    # thresholds = [0.2, 0.3, 0.4, 0.5]
+    thresholds = [0.5]
+
     for t in thresholds:
-        write_name = 'Transform3D_BCL_{}_960_540_VP2VP3'.format(t)
+        write_name = 'Transform3D_960_540_VP2VP3_2'.format(t)
         for calib, vid in zip(calib_list, vid_list):
-            track_detections(calib, vid, pair, width, height, name, t, fake = False, keep=10, write_name=write_name)
+            track_detections(calib, vid, pair, width, height, name, t, fake=False, keep=10, write_name=write_name)
 
     # test_dataset('D:/Skola/PhD/data/Luvizon_boxed_23/images_0', 'D:/Skola/PhD/data/Luvizon_boxed_23/dataset_0.pkl',
     #              'D:/Skola/PhD/data/LuvizonDataset/results/Set01/calib.json',
     #              960, 540, pair='23')
-
-    # if os.name == 'nt':
-    #     write_path = 'D:/Skola/PhD/data/DETRAC/Transform3D'
-    # else:
-    #     write_path = '/home/k/kocur15/data/DETRAC/Transform3D'
-    # name_list = [os.path.join(write_path, '{}_Det_Transform3D_640_360_23.txt'.format(v)) for v in vids]
-    #
-    #
-    # for calib, vid, write_name in zip(calib_list, vid_list, name_list):
-    #     export_detrac_detecions(calib, vid, pair, width, height, name, fake=False, write_path=write_name)
-

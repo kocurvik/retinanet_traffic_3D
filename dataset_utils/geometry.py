@@ -2,15 +2,16 @@ import math
 
 import numpy as np
 
+
 # Couple of helper geometry functions
 # Last two of them are taken from https://github.com/JakubSochor/BrnoCompSpeed
 
 def distance(p1, p2, p3):
-    return np.cross(p2-p1,p3-p1)/np.linalg.norm(p2-p1)
+    return np.cross(p2 - p1, p3 - p1) / np.linalg.norm(p2 - p1)
 
 
-def is_right(l1,l2,p):
-    return ((p[0] - l1[0])*(l2[1]-l1[1]) - (p[1] - l1[1])*(l2[0]-l1[0])) < 0
+def is_right(l1, l2, p):
+    return ((p[0] - l1[0]) * (l2[1] - l1[1]) - (p[1] - l1[1]) * (l2[0] - l1[0])) < 0
 
 
 def isLeft(A, B, P):
@@ -53,17 +54,17 @@ def intersection(L1, L2):
 
 
 def getFocal(vp1, vp2, pp):
-    return math.sqrt(-np.dot(vp1[0:2]-pp[0:2], vp2[0:2]-pp[0:2]))
+    return math.sqrt(-np.dot(vp1[0:2] - pp[0:2], vp2[0:2] - pp[0:2]))
 
 
 def getWorldCoordinagesOnRoadPlane(p, focal, roadPlane, pp):
-    p = p/p[2]
-    pp = pp/pp[2]
+    p = p / p[2]
+    pp = pp / pp[2]
     ppW = np.concatenate((pp[0:2], [0]))
     pW = np.concatenate((p[0:2], [focal]))
     dirVec = pW - ppW
-    t = -np.dot(roadPlane, np.concatenate((ppW, [1])))/np.dot(roadPlane[0:3], dirVec)
-    return ppW + t*dirVec
+    t = -np.dot(roadPlane, np.concatenate((ppW, [1]))) / np.dot(roadPlane[0:3], dirVec)
+    return ppW + t * dirVec
 
 
 def computeCameraCalibration(_vp1, _vp2, _pp):
@@ -74,8 +75,8 @@ def computeCameraCalibration(_vp1, _vp2, _pp):
     vp1W = np.concatenate((_vp1, [focal]))
     vp2W = np.concatenate((_vp2, [focal]))
     ppW = np.concatenate((_pp, [0]))
-    vp3W = np.cross(vp1W-ppW, vp2W-ppW)
-    vp3 = np.concatenate((vp3W[0:2]/vp3W[2]*focal + ppW[0:2], [1]))
-    vp3Direction = np.concatenate((vp3[0:2], [focal]))-ppW
-    roadPlane = np.concatenate((vp3Direction/np.linalg.norm(vp3Direction), [10]))
+    vp3W = np.cross(vp1W - ppW, vp2W - ppW)
+    vp3 = np.concatenate((vp3W[0:2] / vp3W[2] * focal + ppW[0:2], [1]))
+    vp3Direction = np.concatenate((vp3[0:2], [focal])) - ppW
+    roadPlane = np.concatenate((vp3Direction / np.linalg.norm(vp3Direction), [10]))
     return vp1, vp2, vp3, pp, roadPlane, focal

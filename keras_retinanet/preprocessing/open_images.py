@@ -73,17 +73,17 @@ def get_labels(metadata_dir, version='v4'):
 
         boxable_classes_descriptions = os.path.join(metadata_dir, csv_file)
         id_to_labels = {}
-        cls_index    = {}
+        cls_index = {}
 
         i = 0
         with open(boxable_classes_descriptions) as f:
             for row in csv.reader(f):
                 # make sure the csv row is not empty (usually the last one)
                 if len(row):
-                    label       = row[0]
+                    label = row[0]
                     description = row[1].replace("\"", "").replace("'", "").replace('`', '')
 
-                    id_to_labels[i]  = description
+                    id_to_labels[i] = description
                     cls_index[label] = i
 
                     i += 1
@@ -227,25 +227,27 @@ class OpenImagesGenerator(Generator):
             raise NotImplementedError('There is currently no implementation for versions older than v3')
 
         if version == 'challenge2018':
-            self.base_dir     = os.path.join(main_dir, 'images', 'train')
+            self.base_dir = os.path.join(main_dir, 'images', 'train')
         else:
-            self.base_dir     = os.path.join(main_dir, 'images', subset)
+            self.base_dir = os.path.join(main_dir, 'images', subset)
 
-        metadata_dir          = os.path.join(main_dir, metadata)
+        metadata_dir = os.path.join(main_dir, metadata)
         annotation_cache_json = os.path.join(annotation_cache_dir, subset + '.json')
 
-        self.hierarchy          = load_hierarchy(metadata_dir, version=version)
+        self.hierarchy = load_hierarchy(metadata_dir, version=version)
         id_to_labels, cls_index = get_labels(metadata_dir, version=version)
 
         if os.path.exists(annotation_cache_json):
             with open(annotation_cache_json, 'r') as f:
                 self.annotations = json.loads(f.read())
         else:
-            self.annotations = generate_images_annotations_json(main_dir, metadata_dir, subset, cls_index, version=version)
+            self.annotations = generate_images_annotations_json(main_dir, metadata_dir, subset, cls_index,
+                                                                version=version)
             json.dump(self.annotations, open(annotation_cache_json, "w"))
 
         if labels_filter is not None or parent_label is not None:
-            self.id_to_labels, self.annotations = self.__filter_data(id_to_labels, cls_index, labels_filter, parent_label)
+            self.id_to_labels, self.annotations = self.__filter_data(id_to_labels, cls_index, labels_filter,
+                                                                     parent_label)
         else:
             self.id_to_labels = id_to_labels
 

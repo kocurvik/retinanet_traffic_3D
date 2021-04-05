@@ -52,25 +52,25 @@ from ..utils.transform import transform_aabb, random_transform_generator
 class Centers_Generator(object):
 
     def __init__(
-        self,
-        pairs,
-        BCS_path,
-        BoxCars_dataset,
-        BoxCars_images,
-        BCS_sessions = range(4),
-        no_centers = False,
-        fake_centers = False,
-        split_exclusion_function = None,
-        batch_size=1,
-        group_method='random',  # one of 'none', 'random', 'ratio'
-        shuffle_groups=True,
-        image_min_side=400,
-        image_max_side=600,
-        transform_list = None,
-        transform_parameters = None,
-        compute_anchor_targets=anchor_targets_bbox_centers,
-        compute_shapes=guess_shapes,
-        preprocess_image=preprocess_image
+            self,
+            pairs,
+            BCS_path,
+            BoxCars_dataset,
+            BoxCars_images,
+            BCS_sessions=range(4),
+            no_centers=False,
+            fake_centers=False,
+            split_exclusion_function=None,
+            batch_size=1,
+            group_method='random',  # one of 'none', 'random', 'ratio'
+            shuffle_groups=True,
+            image_min_side=400,
+            image_max_side=600,
+            transform_list=None,
+            transform_parameters=None,
+            compute_anchor_targets=anchor_targets_bbox_centers,
+            compute_shapes=guess_shapes,
+            preprocess_image=preprocess_image
     ):
         """ Initialize Generator object.
 
@@ -88,9 +88,9 @@ class Centers_Generator(object):
         """
 
         self.image_names = []
-        self.image_data  = {}
+        self.image_data = {}
 
-        self.classes = {'car' : 0}
+        self.classes = {'car': 0}
 
         # Take base_dir from annotations file if not explicitly specified.
 
@@ -119,13 +119,12 @@ class Centers_Generator(object):
 
         print("Generator size: {}".format(self.size()))
 
-
         # self.transform_generator    = transform_generator
-        self.batch_size             = int(batch_size)
-        self.group_method           = group_method
-        self.shuffle_groups         = shuffle_groups
-        self.image_min_side         = image_min_side
-        self.image_max_side         = image_max_side
+        self.batch_size = int(batch_size)
+        self.group_method = group_method
+        self.shuffle_groups = shuffle_groups
+        self.image_min_side = image_min_side
+        self.image_max_side = image_max_side
 
         if transform_parameters is not None:
             self.transform_list = transform_list
@@ -147,18 +146,16 @@ class Centers_Generator(object):
                 ),
             ]
 
-
-
         self.transform_parameters = transform_parameters or TransformParameters(fill_mode='constant')
         if self.no_centers:
             self.compute_anchor_targets = anchor_targets_bbox
         else:
             self.compute_anchor_targets = compute_anchor_targets
-        self.compute_shapes         = compute_shapes
-        self.preprocess_image       = preprocess_image
+        self.compute_shapes = compute_shapes
+        self.preprocess_image = preprocess_image
 
         self.group_index = 0
-        self.lock        = threading.Lock()
+        self.lock = threading.Lock()
 
         self.group_images()
 
@@ -202,13 +199,13 @@ class Centers_Generator(object):
     def load_annotations(self, image_index):
         """ Load annotations for an image_index.
         """
-        path   = self.image_names[image_index]
+        path = self.image_names[image_index]
         annots = self.image_data[path]
 
         if self.no_centers:
             boxes = np.zeros((len(annots), 5))
         else:
-            boxes  = np.zeros((len(annots), 6))
+            boxes = np.zeros((len(annots), 6))
 
         for idx, annot in enumerate(annots):
             class_name = annot['class']
@@ -235,7 +232,9 @@ class Centers_Generator(object):
         """
         # test all annotations
         for index, (image, annotations) in enumerate(zip(image_group, annotations_group)):
-            assert(isinstance(annotations, np.ndarray)), '\'load_annotations\' should return a list of numpy arrays, received: {}'.format(type(annotations))
+            assert (isinstance(annotations,
+                               np.ndarray)), '\'load_annotations\' should return a list of numpy arrays, received: {}'.format(
+                type(annotations))
 
             # test x2 < x1 | y2 < y1 | x1 < 0 | y1 < 0 | x2 <= 0 | y2 <= 0 | x2 >= image.shape[1] | y2 >= image.shape[0]
             invalid_indices = np.where(
@@ -272,8 +271,9 @@ class Centers_Generator(object):
         transform_generator = self.transform_list[transform_index]
         if transform_generator:
 
-            transform = adjust_transform_for_image(next(transform_generator), image, self.transform_parameters.relative_translation)
-            image     = apply_transform(transform, image, self.transform_parameters)
+            transform = adjust_transform_for_image(next(transform_generator), image,
+                                                   self.transform_parameters.relative_translation)
+            image = apply_transform(transform, image, self.transform_parameters)
 
             # Transform the bounding boxes in the annotations.
             annotations = annotations.copy()
@@ -307,12 +307,13 @@ class Centers_Generator(object):
     def preprocess_group(self, image_group, annotations_group, transform_indices):
         """ Preprocess each image and its annotations in its group.
         """
-        for index, (image, annotations, transform_index) in enumerate(zip(image_group, annotations_group, transform_indices)):
+        for index, (image, annotations, transform_index) in enumerate(
+                zip(image_group, annotations_group, transform_indices)):
             # preprocess a single group entry
             image, annotations = self.preprocess_group_entry(image, annotations, transform_index)
 
             # copy processed data back to group
-            image_group[index]       = image
+            image_group[index] = image
             annotations_group[index] = annotations
 
         return image_group, annotations_group
@@ -328,7 +329,8 @@ class Centers_Generator(object):
             order.sort(key=lambda x: self.image_aspect_ratio(x))
 
         # divide into groups, one group = one batch
-        self.groups = [[order[x % len(order)] for x in range(i, i + self.batch_size)] for i in range(0, len(order), self.batch_size)]
+        self.groups = [[order[x % len(order)] for x in range(i, i + self.batch_size)] for i in
+                       range(0, len(order), self.batch_size)]
 
     def compute_inputs(self, image_group):
         """ Compute inputs for the network using an image_group.
@@ -353,7 +355,7 @@ class Centers_Generator(object):
         """
         # get the max image shape
         max_shape = tuple(max(image.shape[x] for image in image_group) for x in range(3))
-        anchors   = self.generate_anchors(max_shape)
+        anchors = self.generate_anchors(max_shape)
 
         if self.no_centers:
             labels_batch, regression_batch, _ = self.compute_anchor_targets(
@@ -377,7 +379,7 @@ class Centers_Generator(object):
         """ Compute inputs and target outputs for the network.
         """
         # load images and annotations
-        image_group       = self.load_image_group(group)
+        image_group = self.load_image_group(group)
         annotations_group = self.load_annotations_group(group)
 
         # check validity of annotations
@@ -413,8 +415,6 @@ class Centers_Generator(object):
         with open(dataset_path, "rb") as f:
             ds = pickle.load(f, encoding='latin-1', fix_imports=True)
 
-
-
         for i, entry in enumerate(ds):
 
             filename = os.path.join(images_path, entry['filename'])
@@ -442,7 +442,7 @@ class Centers_Generator(object):
                 for label in entry['labels']:
                     dict = {'x1': label['x_min'], 'x2': label['x_max'],
                             'y1': label['y_min'], 'y2': label['y_max'],
-                            'c' : label['centery'], 'class': 'car'}
+                            'c': label['centery'], 'class': 'car'}
                     self.image_data[filename].append(dict)
 
     def parse_BoxCars(self, dataset_path, images_path):

@@ -9,12 +9,12 @@ from keras_retinanet.preprocessing.centers_generator import Centers_Generator
 if __name__ == "__main__" and __package__ is None:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
     import keras_retinanet.bin  # noqa: F401
+
     __package__ = "keras_retinanet.bin"
 
 from .. import models
 
 if __name__ == '__main__':
-
     # model = models.load_model('./snapshots/mobilenet224_1_BC+BCS_10.h5', backbone_name='mobilenet224_1')
 
     model = models.load_model('./snapshots/converted.h5', backbone_name='mobilenet224_1')
@@ -39,23 +39,20 @@ if __name__ == '__main__':
         batch_size=1
     )
 
-
     entry = next(train_generator)
-
-
 
     image = entry[0][0]
 
-    cv2.imshow('Lol',image)
+    cv2.imshow('Lol', image)
 
     cv2.waitKey(100)
 
-    y_pred = model.predict(np.expand_dims(image, axis=0),1)
+    y_pred = model.predict(np.expand_dims(image, axis=0), 1)
 
     print(y_pred[0].shape)
     print(y_pred[1].shape)
     print(y_pred[2].shape)
 
-    boxes = np.concatenate([y_pred[1][0,:,None], y_pred[0][0,:,:], y_pred[2][0,:,None]],1)
+    boxes = np.concatenate([y_pred[1][0, :, None], y_pred[0][0, :, :], y_pred[2][0, :, None]], 1)
 
     print(boxes)

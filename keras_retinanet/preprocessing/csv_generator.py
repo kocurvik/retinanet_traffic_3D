@@ -70,7 +70,9 @@ def _read_annotations(csv_reader, classes):
         try:
             img_file, x1, y1, x2, y2, class_name = row[:6]
         except ValueError:
-            raise_from(ValueError('line {}: format should be \'img_file,x1,y1,x2,y2,class_name\' or \'img_file,,,,,\''.format(line)), None)
+            raise_from(ValueError(
+                'line {}: format should be \'img_file,x1,y1,x2,y2,class_name\' or \'img_file,,,,,\''.format(line)),
+                       None)
 
         if img_file not in result:
             result[img_file] = []
@@ -117,11 +119,11 @@ class CSVGenerator(Generator):
     """
 
     def __init__(
-        self,
-        csv_data_file,
-        csv_class_file,
-        base_dir=None,
-        **kwargs
+            self,
+            csv_data_file,
+            csv_class_file,
+            base_dir=None,
+            **kwargs
     ):
         """ Initialize a CSV data generator.
 
@@ -131,8 +133,8 @@ class CSVGenerator(Generator):
             base_dir: Directory w.r.t. where the files are to be searched (defaults to the directory containing the csv_data_file).
         """
         self.image_names = []
-        self.image_data  = {}
-        self.base_dir    = base_dir
+        self.image_data = {}
+        self.base_dir = base_dir
 
         # Take base_dir from annotations file if not explicitly specified.
         if self.base_dir is None:
@@ -199,9 +201,9 @@ class CSVGenerator(Generator):
     def load_annotations(self, image_index):
         """ Load annotations for an image_index.
         """
-        path   = self.image_names[image_index]
+        path = self.image_names[image_index]
         annots = self.image_data[path]
-        boxes  = np.zeros((len(annots), 5))
+        boxes = np.zeros((len(annots), 5))
 
         for idx, annot in enumerate(annots):
             class_name = annot['class']

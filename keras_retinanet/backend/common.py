@@ -39,7 +39,7 @@ def bbox_transform_inv(boxes, deltas, mean=None, std=None):
     if std is None:
         std = [0.2, 0.2, 0.2, 0.2]
 
-    width  = boxes[:, :, 2] - boxes[:, :, 0]
+    width = boxes[:, :, 2] - boxes[:, :, 0]
     height = boxes[:, :, 3] - boxes[:, :, 1]
 
     x1 = boxes[:, :, 0] + (deltas[:, :, 0] * std[0] + mean[0]) * width
@@ -60,8 +60,10 @@ def shift(shape, stride, anchors):
         stride : Stride to shift the anchors with over the shape.
         anchors: The anchors to apply at each location.
     """
-    shift_x = (keras.backend.arange(0, shape[1], dtype=keras.backend.floatx()) + keras.backend.constant(0.5, dtype=keras.backend.floatx())) * stride
-    shift_y = (keras.backend.arange(0, shape[0], dtype=keras.backend.floatx()) + keras.backend.constant(0.5, dtype=keras.backend.floatx())) * stride
+    shift_x = (keras.backend.arange(0, shape[1], dtype=keras.backend.floatx()) + keras.backend.constant(0.5,
+                                                                                                        dtype=keras.backend.floatx())) * stride
+    shift_y = (keras.backend.arange(0, shape[0], dtype=keras.backend.floatx()) + keras.backend.constant(0.5,
+                                                                                                        dtype=keras.backend.floatx())) * stride
 
     shift_x, shift_y = meshgrid(shift_x, shift_y)
     shift_x = keras.backend.reshape(shift_x, [-1])
@@ -74,12 +76,13 @@ def shift(shape, stride, anchors):
         shift_y
     ], axis=0)
 
-    shifts            = keras.backend.transpose(shifts)
+    shifts = keras.backend.transpose(shifts)
     number_of_anchors = keras.backend.shape(anchors)[0]
 
     k = keras.backend.shape(shifts)[0]  # number of base points = feat_h * feat_w
 
-    shifted_anchors = keras.backend.reshape(anchors, [1, number_of_anchors, 4]) + keras.backend.cast(keras.backend.reshape(shifts, [k, 1, 4]), keras.backend.floatx())
+    shifted_anchors = keras.backend.reshape(anchors, [1, number_of_anchors, 4]) + keras.backend.cast(
+        keras.backend.reshape(shifts, [k, 1, 4]), keras.backend.floatx())
     shifted_anchors = keras.backend.reshape(shifted_anchors, [k * number_of_anchors, 4])
 
     return shifted_anchors
