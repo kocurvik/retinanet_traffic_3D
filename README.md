@@ -20,7 +20,7 @@ Note that this repository was uploaded upon an individual request a year after t
 
 All of the code related to testing is located in the dataset_utils directory.
 
-To run the models you will need to download the relevant model and run dataset_utils/run.py You can find further instructions in that file.
+To run the models you will need to download the relevant model and run dataset_utils/test.py You can find further instructions in that file.
 
 The models are run on the BrnoCompSpeed dataset videos and also require the calibration files from the relevant papers. The website (http://medusa.fit.vutbr.cz) of the research group hosting the dataset and the calibration files has been down since summer 2020. If you obtain the BrnoCompSpeed dataset you can use the calibration files which are provided in my [repository](https://github.com/kocurvik/BCS_results) mentioned in the paper. To evaluate the results please refer to the BrnoCompSpeed evaluation code [repository](https://github.com/JakubSochor/BrnoCompSpeed)
 
