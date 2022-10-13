@@ -1,4 +1,5 @@
 import json
+import math
 import pickle
 import time
 from queue import Queue, Empty
@@ -13,6 +14,7 @@ import cv2
 # result. Offline version first saves all detections and then tracks them separately.
 
 # Also includes a method to visually check the generated datasets.
+from dataset_utils.tracker import Tracker
 from dataset_utils.utils import FolderVideoReader, deprocess_image
 
 if __name__ == "__main__" and __package__ is None:
@@ -21,9 +23,9 @@ if __name__ == "__main__" and __package__ is None:
     # __package__ = "keras_retinanet.bin"
     print(sys.path)
 
-from dataset_utils.tracker import Tracker
-from dataset_utils.warper import get_transform_matrix, get_transform_matrix_with_criterion
-from dataset_utils.geometry import distance, computeCameraCalibration
+from dataset_utils.warper import get_transform_matrix, get_transform_matrix_with_criterion, warp_point
+from dataset_utils.geometry import distance, computeCameraCalibration, intersection, line, \
+    getWorldCoordinagesOnRoadPlane
 from dataset_utils.writer import Writer
 from keras_retinanet.utils.image import preprocess_image
 from keras import backend as K
@@ -32,36 +34,73 @@ import keras_retinanet.models
 
 TIMEOUT = 20
 
+font = cv2.FONT_HERSHEY_SIMPLEX
 
-def draw_raw_output(images, y_pred, threshold=0.5, cnt=None):
-    images = deprocess_image(images)
-    for i, image in enumerate(images):
-        if cnt is not None:
-            cv2.imwrite('frames/raw_t_{}_{}.jpg'.format(cnt, i), image)
-        boxes = np.concatenate([y_pred[1][i, :, None], y_pred[0][i, :, :], y_pred[3][i, :, :]], 1)
+
+class TrackerBA(Tracker):
+    def __init__(self, projector, fps, json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, threshold=0.7, pair='23', keep=5,
+                 compare=False, fake=False, write_name=None, save_often=True):
+        super().__init__(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, threshold, pair, keep, compare, fake, write_name, save_often)
+
+        self.projector = projector
+        self.fps = fps
+
+    def draw_box_with_speed(self, track, box, image_b):
+        bb_tt, center = self.get_bb(box)
+        track.assign_center(center)
+
+        bb_tt = [tuple(point) for point in bb_tt]
+
+        image_b = cv2.line(image_b, bb_tt[0], bb_tt[1], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[1], bb_tt[2], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[2], bb_tt[3], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[3], bb_tt[0], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[0], bb_tt[4], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[1], bb_tt[5], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[2], bb_tt[6], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[3], bb_tt[7], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[4], bb_tt[5], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[5], bb_tt[6], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[6], bb_tt[7], (0, 128, 0), 9)
+        image_b = cv2.line(image_b, bb_tt[7], bb_tt[4], (0, 128, 0), 9)
+
+        id = track.id
+        speed = track.get_speed(self.projector, self.fps)
+
+        image_b = cv2.putText(image_b, '{}:{:.2f}'.format(id, speed), bb_tt[3], font, 1, (0, 0, 255), 2, cv2.LINE_AA)
+
+        image_b = cv2.circle(image_b, (int(center[0]), int(center[1])), 5, (0, 255, 255), 5)
+
+        return image_b, center
+
+    def process(self, boxes, image):
+        image_b = np.copy(image)
+        self.frame += 1
+        if self.frame % 1000 == 0 and self.save_often:
+            self.write()
+
         for box in boxes:
-            if box[0] < threshold:
+            if box[0] < self.threshold:
                 continue
-            xmin = box[1]
-            ymin = box[2]
-            xmax = box[3]
-            ymax = box[4]
-            cy_1 = (1 - box[-1]) * (ymax - ymin) + ymin
-            cy_0 = box[-1] * (ymax - ymin) + ymin
+            track = self.get_track(box)
+            image_b, center = self.draw_box_with_speed(track, box, image_b)
+        self.remove()
+        return image_b
 
-            cv2.line(image, (int(xmin), int(cy_0)), (int(xmax), int(cy_0)), (255, 0, 0), thickness=5)
+    class Track(Tracker.Track):
+        def __init__(self, box, id, frame):
+            super().__init__(box, id, frame)
 
-            cv2.line(image, (int(xmin), int(ymin)), (int(xmin), int(ymax)), (0, 128, 0), thickness=5)
-            cv2.line(image, (int(xmin), int(ymax)), (int(xmax), int(ymax)), (0, 128, 0), thickness=5)
-            cv2.line(image, (int(xmax), int(ymax)), (int(xmax), int(ymin)), (0, 128, 0), thickness=5)
-            cv2.line(image, (int(xmax), int(ymin)), (int(xmin), int(ymin)), (0, 128, 0), thickness=5)
+        def get_speed(self, projector, fps):
+            if len(self.centers) < 3:
+                return 5
 
-            # cv2.line(image, (int(xmin), int(cy_1)), (int(xmax), int(cy_1)), (255, 0, 0), thickness=1)
+            centers_world_array = np.array([projector(np.array([p[0], p[1], 1])) for p in self.centers])
+            dists = np.linalg.norm(centers_world_array[1:] - centers_world_array[:-1], axis=1)
+            frame_diffs = np.array(self.frames)[1:] - np.array(self.frames)[:-1]
+            speeds = 3.6 * dists / (frame_diffs / fps)
 
-        # if cnt is not None:
-        #     cv2.imwrite('frames/raw_out_{}_{}.jpg'.format(cnt, i), image)
-        cv2.imshow("Raw out", image)
-        cv2.waitKey(1)
+            return np.median(speeds)
 
 
 def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_path=None, compare=False, online=True,
@@ -76,11 +115,14 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
         structure = json.load(file)
         camera_calibration = structure['camera_calibration']
 
-    vp1, vp2, vp3, _, _, _ = computeCameraCalibration(camera_calibration["vp1"], camera_calibration["vp2"],
+    vp1, vp2, vp3, pp, roadPlane, focal = computeCameraCalibration(camera_calibration["vp1"], camera_calibration["vp2"],
                                                       camera_calibration["pp"])
     vp1 = vp1[:-1] / vp1[-1]
     vp2 = vp2[:-1] / vp2[-1]
     vp3 = vp3[:-1] / vp3[-1]
+
+    scale = camera_calibration['scale']
+    projector = lambda x : scale * getWorldCoordinagesOnRoadPlane(x, focal, roadPlane, pp)
 
     if os.path.isdir(video_path):
         cap = FolderVideoReader(video_path)
@@ -188,12 +230,11 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
             y_pred = model.predict_on_batch(np.array(images))
             q_predict.put(y_pred)
             print("GPU FPS: {}".format(batch / (time.time() - gpu_time)))
-            if online:
-                draw_raw_output(images, y_pred, cnt=cnt)
+            # if online:
+            #     draw_raw_output(images, y_pred, cnt=cnt)
 
     def postprocess():
-        tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, pair=pair, threshold=0.3, compare=compare,
-                          fake=fake)
+        tracker = TrackerBA(projector, 30.0, json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, pair=pair, threshold=0.3, compare=compare, fake=fake)
         counter = 0
         total_time = time.time()
         while not e_stop.isSet():
@@ -220,7 +261,6 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
                 if out_path is not None:
                     out.write(image_b)
                 cv2.imshow('frame', image_b)
-                # cv2.imwrite('frames/detected_{}_{}.png'.format(counter, i), image_b)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     e_stop.set()
 
@@ -271,143 +311,20 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
         out.release()
 
 
-def get_calib_params(im_h, im_w, json_path, pair, video_path):
-    with open(json_path, 'r+') as file:
-        structure = json.load(file)
-        camera_calibration = structure['camera_calibration']
-    vp1, vp2, vp3, _, _, _ = computeCameraCalibration(camera_calibration["vp1"], camera_calibration["vp2"],
-                                                      camera_calibration["pp"])
-    if os.path.exists(os.path.join(video_path, 'video_mask.png')):
-        mask = cv2.imread(os.path.join(video_path, 'video_mask.png'), 0)
-    else:
-        mask = 255 * np.ones([1080, 1920], dtype=np.uint8)
-    vp1 = vp1[:-1] / vp1[-1]
-    vp2 = vp2[:-1] / vp2[-1]
-    vp3 = vp3[:-1] / vp3[-1]
-    if pair == '12':
-        M, IM = get_transform_matrix_with_criterion(vp1, vp2, mask, im_w, im_h)
-    elif pair == '23':
-        M, IM = get_transform_matrix_with_criterion(vp3, vp2, mask, im_w, im_h, vp_top=None)
-    return IM, M, vp1, vp2, vp3
-
-
-def track_detections(json_path, video_path, pair, im_w, im_h, name, threshold, fake=False, write_name=None, keep=5):
-    # If test was run with online=False, then this function generates the final evaluation file
-    print('Tracking: {} for t = {}'.format(name, threshold))
-
-    IM, M, vp1, vp2, vp3 = get_calib_params(im_h, im_w, json_path, pair, video_path)
-
-    tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, threshold=threshold, pair=pair, fake=fake,
-                      write_name=write_name, keep=keep)
-    tracker.read()
-
-
-def test_dataset(images_path, ds_path, json_path, im_w, im_h, pair='23'):
-    with open(ds_path, 'rb') as f:
-        ds = pickle.load(f, encoding='latin-1', fix_imports=True)
-
-    entry = ds[0]
-
-    IM, M, vp1, vp2, vp3 = get_calib_params(im_h, im_w, json_path, pair, images_path)
-
-    vp1_t = np.array([vp1], dtype="float32")
-    vp1_t = np.array([vp1_t])
-    vp1_t = cv2.perspectiveTransform(vp1_t, M)
-    vp1_t = vp1_t[0][0]
-
-    tracker = Tracker(json_path, M, IM, vp1, vp2, vp3, im_w, im_h, 'none', threshold=0.5, pair=pair)
-
-    pred_format = ['conf', 'x_min', 'y_min', 'x_max', 'y_max', 'centery']
-
-    for entry in ds:
-        frame = cv2.imread(os.path.join(images_path, entry['filename']))
-        # frame = resize(frame,(1920,1080))
-        frame = cv2.warpPerspective(frame, IM, (1920, 1080))
-        print(frame.shape)
-
-        # t_image = cv2.warpPerspective(frame, M, (480, 300), borderMode=cv2.BORDER_REPLICATE)
-
-        boxes = entry['labels']
-        boxes = [[1 if elem == 'conf' else box[elem] for elem in pred_format] for box in boxes]
-        boxes = np.array(boxes)
-        print(boxes)
-
-        image_b = tracker.process(boxes, frame)
-        # image_b = decode_3dbb(boxes, frame, IM, vp0, vp1, vp2, vp0_t)
-
-        cv2.imshow('frame', image_b)
-        if cv2.waitKey(0) & 0xFF == ord('q'):
-            break
-
-
 if __name__ == "__main__":
-    vid_list = []
-    calib_list = []
-
-    if os.name == 'nt':
-        vid_path = 'D:/Research/data/2016-ITS-BrnoCompSpeed/dataset'
-        results_path = 'D:/Research/data/2016-ITS-BrnoCompSpeed/results/'
-    else:
-        vid_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/dataset/'
-        results_path = '/home/k/kocur15/data/2016-ITS-BrnoCompSpeed/results/'
-
-    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
-
-    # import tensorflow as tf
-    # from keras import backend as k
-    # config = tf.ConfigProto()
-    # config.gpu_options.allow_growth = True
-    #
-    # config.gpu_options.per_process_gpu_memory_fraction = 0.45
-    # k.tensorflow_backend.set_session(tf.Session(config=config))
-
-    for i in range(4, 7):
-        dir_list = ['session{}_center'.format(i), 'session{}_left'.format(i), 'session{}_right'.format(i)]
-        # dir_list = ['session{}_right'.format(i)]
-        vid_list.extend([os.path.join(vid_path, d, 'video.avi') for d in dir_list])
-        calib_list.extend([os.path.join(results_path, d, 'system_SochorCVIU_Edgelets_BBScale_Reg.json') for d in dir_list])
-
-    # on luvizon datset
-    # if os.name == 'nt':
-    #     vid_path = 'D:/Skola/PhD/data/LuvizonDataset/dataset/'
-    #     results_path = 'D:/Skola/PhD/data/LuvizonDataset/results/'
-    # else:
-    #     vid_path = '/home/k/kocur15/data/luvizon/dataset/'
-    #     results_path = '/home/k/kocur15/data/luvizon/results/'
-    # vid_dict = {1: [1, 2], 2: [1, 2, 3, 4, 5, 6], 3: [1], 4: [1], 5: [1]}
-    #
-    # for i in vid_dict.keys():
-    #     vid_list.extend([os.path.join(vid_path, 'subset0{}'.format(i), 'video{:02d}'.format(j), 'video.h264') for j in vid_dict[i]])
-    #     calib_list.extend([os.path.join(results_path, 'subset0{}'.format(i), 'video{:02d}'.format(j), 'calib.json') for j in vid_dict[i]])
-
     pair = '23'
     width = 640
     height = 360
     name = '{}_{}_{}'.format(width, height, pair)
 
-    if os.name == 'nt':
-        model = keras_retinanet.models.load_model(
-            'D:/Research/code/keras_retinanet_MVAA/models/resnet50_{}.h5'.format(name),
-            backbone_name='resnet50', convert=False)
-    else:
-        model = keras_retinanet.models.load_model(
-            '/home/k/kocur15/code/keras-retinanet/snapshots/{}/resnet50_{}.h5'.format(name, name),
-            backbone_name='resnet50', convert=False)
+    model = keras_retinanet.models.load_model(
+        'D:/Research/code/keras_retinanet_MVAA/models/resnet50_{}.h5'.format(name),
+        backbone_name='resnet50', convert=False)
 
     print(model.summary)
     model._make_predict_function()
 
-    for vid, calib in zip(vid_list, calib_list):
-        test_video(model, vid, calib, width, height, 16, name, pair, online=True, fake=False)  # out_path='D:/Skola/PhD/code/keras-retinanet/video_results/center_6_12.avi')
+    vid_path = 'D:/Research/data/BASpeed/Zochova/video.m4v'
+    calib_path = 'D:/Research/data/BASpeed/Zochova/calib.json'
 
-    # thresholds = [0.2, 0.3, 0.4, 0.5]
-    thresholds = [0.5]
-
-    for t in thresholds:
-        write_name = 'Transform3D_960_540_VP2VP3_2'.format(t)
-        for calib, vid in zip(calib_list, vid_list):
-            track_detections(calib, vid, pair, width, height, name, t, fake=False, keep=10, write_name=write_name)
-
-    # test_dataset('D:/Skola/PhD/data/Luvizon_boxed_23/images_0', 'D:/Skola/PhD/data/Luvizon_boxed_23/dataset_0.pkl',
-    #              'D:/Skola/PhD/data/LuvizonDataset/results/Set01/calib.json',
-    #              960, 540, pair='23')
+    test_video(model, vid_path, calib_path, width, height, 1, name, pair, online=True, fake=False)  # out_path='D:/Skola/PhD/code/keras-retinanet/video_results/center_6_12.avi')

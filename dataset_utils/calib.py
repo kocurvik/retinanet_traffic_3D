@@ -214,13 +214,15 @@ if __name__ == "__main__":
     # for v, c in zip(vid_list, calib_list):
     #     test_video(v, c)
 
-    vid_dir = 'D:/Skola/PhD/data/DETRAC/Insight-MVT_Annotation_Test/'
-    vids = ['MVI_39031', 'MVI_39051', 'MVI_39211', 'MVI_39271', 'MVI_39371', 'MVI_39501', 'MVI_39511', 'MVI_40742',
-            'MVI_40743', 'MVI_40863', 'MVI_40864']
-    # vids = ['MVI_40742', 'MVI_40743']
+    # vid_dir = 'D:/Skola/PhD/data/DETRAC/Insight-MVT_Annotation_Test/'
+    # vids = ['MVI_39031', 'MVI_39051', 'MVI_39211', 'MVI_39271', 'MVI_39371', 'MVI_39501', 'MVI_39511', 'MVI_40742',
+    #         'MVI_40743', 'MVI_40863', 'MVI_40864']
+    # # vids = ['MVI_40742', 'MVI_40743']
+    #
+    # vid_list = [os.path.join(vid_dir, v) for v in vids]
+    # calib_list = [os.path.join(vid_dir, v, 'calib.json') for v in vids]
+    #
+    # for vid, calib in zip(vid_list, calib_list):
+    #     calib_video(vid, debug=False, out_path=calib)
 
-    vid_list = [os.path.join(vid_dir, v) for v in vids]
-    calib_list = [os.path.join(vid_dir, v, 'calib.json') for v in vids]
-
-    for vid, calib in zip(vid_list, calib_list):
-        calib_video(vid, debug=False, out_path=calib)
+    calib_video('D:/Research/data/BASpeed/Zochova/video.m4v', out_path='D:/Research/data/BASpeed/Zochova/zochova.json', debug=True)
