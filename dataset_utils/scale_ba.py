@@ -47,7 +47,6 @@ def manual_scale(vid_path, calib_path, real_dist):
         json.dump(structure, file)
 
 
-
 if __name__ == '__main__':
     vid_path = 'D:/Research/data/BASpeed/Zochova/video.m4v'
     calib_path = 'D:/Research/data/BASpeed/Zochova/calib.json'

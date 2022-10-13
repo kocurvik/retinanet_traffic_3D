@@ -1,3 +1,4 @@
+import argparse
 import json
 import math
 import pickle
@@ -104,7 +105,7 @@ class TrackerBA(Tracker):
 
 
 def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_path=None, compare=False, online=True,
-               fake=False):
+               fake=False, show=False):
     # This function runs the detections. If online=True then the system runs with tracking and outputting the resulting
     # video. If online=False then the detections are saved to a file and have to be tracked later. The fake parameter is
     # for ablation experiments where perspective transformation is used but only 2D bboxes are output (hence fake since
@@ -260,9 +261,10 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
 
                 if out_path is not None:
                     out.write(image_b)
-                cv2.imshow('frame', image_b)
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    e_stop.set()
+                if show:
+                    cv2.imshow('frame', image_b)
+                    if cv2.waitKey(1) & 0xFF == ord('q'):
+                        e_stop.set()
 
             # break
             # print("Post FPS: {}".format(batch / (time.time() - post_time)))
@@ -311,15 +313,25 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
         out.release()
 
 
-if __name__ == "__main__":
-    pair = '23'
-    width = 640
-    height = 360
-    name = '{}_{}_{}'.format(width, height, pair)
 
-    model = keras_retinanet.models.load_model(
-        'D:/Research/code/keras_retinanet_MVAA/models/resnet50_{}.h5'.format(name),
-        backbone_name='resnet50', convert=False)
+def parse_command_line():
+    """ Parser used for training and inference returns args. Sets up GPUs."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-o', '--output_path', default=None, help='Path to output video')
+    parser.add_argument('-s', '--show', default=False, action='store_true', help='Whether to show video')
+    parser.add_argument('model_path', help='Path to model')
+    parser.add_argument('vid_path', help='Path to video')
+    parser.add_argument('calib_path', help='Path to calib file')
+    args = parser.parse_args()
+    return args
+
+
+if __name__ == "__main__":
+    # model 640_360_23
+
+    args = parse_command_line()
+
+    model = keras_retinanet.models.load_model(args.model_path, backbone_name='resnet50', convert=False)
 
     print(model.summary)
     model._make_predict_function()
@@ -327,4 +339,4 @@ if __name__ == "__main__":
     vid_path = 'D:/Research/data/BASpeed/Zochova/video.m4v'
     calib_path = 'D:/Research/data/BASpeed/Zochova/calib.json'
 
-    test_video(model, vid_path, calib_path, width, height, 1, name, pair, online=True, fake=False)  # out_path='D:/Skola/PhD/code/keras-retinanet/video_results/center_6_12.avi')
+    test_video(model, args.vid_path, args.calib_path, 640, 360, 1, 'result', '23', online=True, fake=False, out_path=args.output_path, show=args.show)
