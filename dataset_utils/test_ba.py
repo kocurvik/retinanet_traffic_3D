@@ -155,7 +155,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
 
     if out_path is not None:
         fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
-        out = cv2.VideoWriter(out_path, fourcc, 50.0, (frame.shape[1], frame.shape[0]))
+        out = cv2.VideoWriter(out_path, fourcc, 30.0, (frame.shape[1], frame.shape[0]))
 
     q_frames = Queue(10)
     q_images = Queue(10)
@@ -318,6 +318,7 @@ def parse_command_line():
     """ Parser used for training and inference returns args. Sets up GPUs."""
     parser = argparse.ArgumentParser()
     parser.add_argument('-o', '--output_path', default=None, help='Path to output video')
+    parser.add_argument('-s', '--batch_size', default=16, type=int, help='Batch size for inference')
     parser.add_argument('-s', '--show', default=False, action='store_true', help='Whether to show video')
     parser.add_argument('model_path', help='Path to model')
     parser.add_argument('vid_path', help='Path to video')
@@ -339,4 +340,4 @@ if __name__ == "__main__":
     vid_path = 'D:/Research/data/BASpeed/Zochova/video.m4v'
     calib_path = 'D:/Research/data/BASpeed/Zochova/calib.json'
 
-    test_video(model, args.vid_path, args.calib_path, 640, 360, 1, 'result', '23', online=True, fake=False, out_path=args.output_path, show=args.show)
+    test_video(model, args.vid_path, args.calib_path, 640, 360, args.batch_size, 'result', '23', online=True, fake=False, out_path=args.output_path, show=args.show)
