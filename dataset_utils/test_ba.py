@@ -318,7 +318,7 @@ def parse_command_line():
     """ Parser used for training and inference returns args. Sets up GPUs."""
     parser = argparse.ArgumentParser()
     parser.add_argument('-o', '--output_path', default=None, help='Path to output video')
-    parser.add_argument('-s', '--batch_size', default=16, type=int, help='Batch size for inference')
+    parser.add_argument('-b', '--batch_size', default=16, type=int, help='Batch size for inference')
     parser.add_argument('-s', '--show', default=False, action='store_true', help='Whether to show video')
     parser.add_argument('model_path', help='Path to model')
     parser.add_argument('vid_path', help='Path to video')
