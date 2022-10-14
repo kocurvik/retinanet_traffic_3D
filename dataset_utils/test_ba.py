@@ -125,12 +125,14 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
     scale = camera_calibration['scale']
     projector = lambda x : scale * getWorldCoordinagesOnRoadPlane(x, focal, roadPlane, pp)
 
-    if os.path.isdir(video_path):
-        cap = FolderVideoReader(video_path)
-        video_dir = video_path
-    else:
-        cap = cv2.VideoCapture(video_path)
-        video_dir = os.path.dirname(video_path)
+    # if os.path.isdir(video_path):
+    #     cap = FolderVideoReader(video_path)
+    #     video_dir = video_path
+    # else:
+    cap = cv2.VideoCapture(video_path)
+    video_dir = os.path.dirname(video_path)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+
     if os.path.exists(os.path.join(video_dir, 'video_mask.png')):
         mask = cv2.imread(os.path.join(video_dir, 'video_mask.png'), 0)
     else:
@@ -155,7 +157,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
 
     if out_path is not None:
         fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
-        out = cv2.VideoWriter(out_path, fourcc, 30.0, (frame.shape[1], frame.shape[0]))
+        out = cv2.VideoWriter(out_path, fourcc, fps, (frame.shape[1], frame.shape[0]))
 
     q_frames = Queue(10)
     q_images = Queue(10)
@@ -235,7 +237,7 @@ def test_video(model, video_path, json_path, im_w, im_h, batch, name, pair, out_
             #     draw_raw_output(images, y_pred, cnt=cnt)
 
     def postprocess():
-        tracker = TrackerBA(projector, 30.0, json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, pair=pair, threshold=0.3, compare=compare, fake=fake)
+        tracker = TrackerBA(projector, fps, json_path, M, IM, vp1, vp2, vp3, im_w, im_h, name, pair=pair, threshold=0.3, compare=compare, fake=fake)
         counter = 0
         total_time = time.time()
         while not e_stop.isSet():
@@ -319,6 +321,7 @@ def parse_command_line():
     parser = argparse.ArgumentParser()
     parser.add_argument('-o', '--output_path', default=None, help='Path to output video')
     parser.add_argument('-b', '--batch_size', default=16, type=int, help='Batch size for inference')
+    # parser.add_argument('-f', '--fps', default=25.0, type=float, help='Video FPS')
     parser.add_argument('-s', '--show', default=False, action='store_true', help='Whether to show video')
     parser.add_argument('model_path', help='Path to model')
     parser.add_argument('vid_path', help='Path to video')
