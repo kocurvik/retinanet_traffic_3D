@@ -4,6 +4,12 @@ Link to the [paper](https://rdcu.be/b6Ofz).
 
 This work is an extension of our previous work titled: "Perspective transformation for accurate detection of 3D bounding boxes of vehicles in traffic surveillance" presented at CVWW 2019 [link](https://openlib.tugraz.at/download.php?id=5c5941d91c84c&location=browse).
 
+# :warning: UPDATE: New repo based on the same approach with YOLOv6
+
+Andrej Macko has reimpelemted the method to use a more modern object detector YOLOv6 for his master's thesis. We recommend you use his implementation, which you can find in [this repo](https://github.com/macodroid/YOLOv6_transform_3d).
+
+You can still use this repo for your purposes, but it requires tf 1.14 to run properly which might be difficult to install. The computational costs of the newer versions are lower while having virtually the same speed measurement accuracy.
+
 ## Acknowledgment
 
 This repository is a fork of the wonderful keras-retinanet repo: https://github.com/fizyr/keras-retinanet
