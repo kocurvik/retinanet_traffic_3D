@@ -6,9 +6,9 @@ This work is an extension of our previous work titled: "Perspective transformati
 
 # :warning: UPDATE: New repo based on the same approach with YOLOv6
 
-Andrej Macko has reimpelemted the method to use a more modern object detector YOLOv6 for his master's thesis. We recommend you use his implementation, which you can find in [this repo](https://github.com/macodroid/YOLOv6_transform_3d).
+We have reimpelemted the method to use a more modern object detector YOLOv6 and performed extensive evaluation in our follow-up paper titled [Efficient vision-based vehicle speed estimation](https://link.springer.com/article/10.1007/s11554-025-01704-z). The code can be found in [this repo](https://github.com/gajdosech2/Vehicle-Speed-Estimation-YOLOv6-3D).
 
-You can still use this repo for your purposes, but it requires tf 1.14 to run properly which might be difficult to install. The computational costs of the newer versions are lower while having virtually the same speed measurement accuracy.
+You can still use this repo for your purposes, but it requires tf 1.14 to run properly which might be difficult to install. The computational efficiency of the newer version is much better while having virtually the same speed measurement accuracy.
 
 ## Acknowledgment
 
