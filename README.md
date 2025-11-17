@@ -34,15 +34,15 @@ The models are run on the BrnoCompSpeed dataset videos and also require the cali
 
 | Type        | Pair | Resolution           | Model  |
 | ------------- | ------ |-------------| -----|
-| Transform 3D  | 23 | 480 x 270 | [download](https://drive.google.com/file/d/1O6mjzdrgPwg8J9XxmWsFnWxQHXmF_nR0/view?usp=sharing) |
-| Transform 3D  | 23 | 640 x 360 | [download](https://drive.google.com/file/d/1SERwZojQL_Efaq5WeROEmKt5LpyQ0h5x/view?usp=sharing) |
-| Transform 3D  | 23 | 960 x 540 | [download](https://drive.google.com/file/d/1LhgKrujz9kgOrv33rOSWJIhNQalK4ug_/view?usp=sharing) |
-| Transform 3D  | 12 | 270 x 480 | [download](https://drive.google.com/file/d/1MGamEp4o5QoBbpK0lcTfQ0xNjC0D9jNh/view?usp=sharing)|
-| Transform 3D  | 12 | 360 x 640 | [download](https://drive.google.com/file/d/1pvwbTDNMLJrS9MGE-p4QxcyoHdve0MqO/view?usp=sharing) |
-| Transform 3D  | 12 | 540 x 960 | [download](https://drive.google.com/file/d/1qVpq1TG93Ae-xO2jF-Bigiyvfjdjy06C/view?usp=sharing) |
-| Transform 2D (ablation)  | 23 | 640 x 360 | [download](https://drive.google.com/file/d/1ea5ia4u927jwvEEVDhHiZAKEdxdb7Bwr/view?usp=sharing) |
-| Orig 2D (ablation) | - | 640 x 360 | [download](https://drive.google.com/file/d/1Koq4x16K4-4tOLpOjhqASntcTQWkCkvz/view?usp=sharing) |
-| Transform 3D (luvizon et al. dataset) | 23 | 640 x 360 | [download](https://drive.google.com/file/d/1MlW1I1-INaBu4HAdH0qtQyfIflfCni3x/view?usp=sharing) |
+| Transform 3D  | 23 | 480 x 270 | [download](https://liveuniba-my.sharepoint.com/:u:/g/personal/kocur15_uniba_sk/IQCtIMOnw1-4TI6hVvq5-K89AYvXXrZ0YxO9s4NW7fBqtVw?e=6dRZOK) |
+| Transform 3D  | 23 | 640 x 360 | [download](https://liveuniba-my.sharepoint.com/:u:/g/personal/kocur15_uniba_sk/IQDCxO5cCLKXSbNJMtr2rtHdAa-H_xDrC1r6JmjJIZ4KI4k?e=cOUZhp) |
+| Transform 3D  | 23 | 960 x 540 | [download](https://liveuniba-my.sharepoint.com/:u:/g/personal/kocur15_uniba_sk/IQAcyz2xTN4BT7wHGXSi-NDDAUMBP4p2nYSXx96H42wuUdM?e=wYIsX3) |
+| Transform 3D  | 12 | 270 x 480 | [download](https://liveuniba-my.sharepoint.com/:u:/g/personal/kocur15_uniba_sk/IQCchgh7PFP7Ro_TjIFaK0joAavmwRBeWDZBfLc-2X3ci8k?e=KRbkZd)|
+| Transform 3D  | 12 | 360 x 640 | [download](https://liveuniba-my.sharepoint.com/:u:/g/personal/kocur15_uniba_sk/IQApljtR_MCWTbjHMF7G7coOAbXqcx7GrK495RL_jhdC4-E?e=lH0230) |
+| Transform 3D  | 12 | 540 x 960 | [download](https://liveuniba-my.sharepoint.com/:u:/g/personal/kocur15_uniba_sk/IQCByPxqiih7Qba980N50xarATLf41QjvuRRN2g5GiDyQV0?e=VplKnY)|
+| Transform 2D (ablation)  | 23 | 640 x 360 | [download](https://liveuniba-my.sharepoint.com/:u:/g/personal/kocur15_uniba_sk/IQCjA3UAFEb3SZBsvozE7aPQAdVuRqNwLnDeoFJB5l4Xj0k?e=wPnSIo) |
+| Orig 2D (ablation) | - | 640 x 360 | [download](https://liveuniba-my.sharepoint.com/:u:/g/personal/kocur15_uniba_sk/IQD1-TmfKwlRQZDqLKeFBXOIAdagAvADZzPDBEC6u3iAaOo?e=U6GB4g) |
+| Transform 3D (luvizon et al. dataset) | 23 | 640 x 360 | [download](https://liveuniba-my.sharepoint.com/:u:/g/personal/kocur15_uniba_sk/IQB2vEgQ2qhLR5sH2SS5cjFjAZPIfbx34x5bzscfdbS1Mvk?e=tKru85) |
 
 ## Training
 
